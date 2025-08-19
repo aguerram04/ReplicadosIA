@@ -1,0 +1,11 @@
+{
+  "extends": ["next", "next/core-web-vitals"],
+  "ignorePatterns": [
+    "next.config.*",
+    "postcss.config.js",
+    "tailwind.config.*",
+    "src/app/globals.css",
+    "**/*.css"
+  ],
+  "rules": {}
+}
