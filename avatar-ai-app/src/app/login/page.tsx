@@ -45,6 +45,20 @@ export default function LoginPage() {
           Entrar
         </button>
       </form>
+      <div className="mt-8 space-y-3">
+        <button
+          className="w-full px-4 py-2 rounded-md border border-white/20"
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        >
+          Continuar con Google
+        </button>
+        <button
+          className="w-full px-4 py-2 rounded-md border border-white/20"
+          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+        >
+          Continuar con GitHub
+        </button>
+      </div>
     </main>
   );
 }
