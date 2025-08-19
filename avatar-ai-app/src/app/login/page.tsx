@@ -1,4 +1,5 @@
-import { signIn } from "@/auth";
+"use client";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   return (
@@ -6,14 +7,16 @@ export default function LoginPage() {
       <h1>Iniciar sesión</h1>
       <form
         className="mt-6 space-y-4"
-        action={async (formData: FormData) => {
-          "use server";
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget as HTMLFormElement;
+          const formData = new FormData(form);
           const email = String(formData.get("email") || "");
           const name = String(formData.get("name") || "");
           await signIn("credentials", {
             email,
             name,
-            redirectTo: "/dashboard",
+            callbackUrl: "/dashboard",
           });
         }}
       >

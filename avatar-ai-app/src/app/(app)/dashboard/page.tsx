@@ -1,8 +1,10 @@
-import { auth, signOut } from "@/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const session = await auth();
-  if (!session?.user?.email) {
+  const session: any = await getServerSession(authOptions as any);
+  if (!session || !session.user || !session.user.email) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl font-semibold">No autenticado</h1>
@@ -23,7 +25,8 @@ export default async function DashboardPage() {
     <main className="min-h-screen p-8">
       <h1 className="text-3xl font-semibold">Dashboard</h1>
       <p className="mt-2 text-white/70">
-        Bienvenido, {session.user.name || session.user.email}.
+        Bienvenido,{" "}
+        {(session as any).user?.name || (session as any).user?.email}.
       </p>
       <div className="mt-6 grid gap-4 grid-cols-1 md:grid-cols-2">
         <div className="rounded-lg border border-white/10 p-4">
@@ -35,16 +38,12 @@ export default async function DashboardPage() {
           <p className="text-white/60 mt-2">Aún no hay videos generados.</p>
         </div>
       </div>
-      <form
-        action={async () => {
-          "use server";
-          await signOut();
-        }}
+      <a
+        href="/api/auth/signout"
+        className="mt-8 inline-block px-4 py-2 rounded-md border border-white/20"
       >
-        <button className="mt-8 px-4 py-2 rounded-md border border-white/20">
-          Cerrar sesión
-        </button>
-      </form>
+        Cerrar sesión
+      </a>
     </main>
   );
 }
