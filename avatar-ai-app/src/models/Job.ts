@@ -11,6 +11,7 @@ export interface IJob {
   avatarId?: string;
   voiceId?: string;
   consent: boolean;
+  assets?: string[];
   status: JobStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +30,7 @@ const JobSchema = new Schema<IJob>(
     avatarId: { type: String },
     voiceId: { type: String },
     consent: { type: Boolean, default: false },
+    assets: { type: [String], default: [] },
     status: {
       type: String,
       enum: ["draft", "queued", "processing", "done", "error"],

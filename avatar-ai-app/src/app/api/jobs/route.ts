@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     avatarId,
     voiceId,
     consent,
+    assets,
   } = body as Record<string, unknown>;
 
   if (!title || !script) {
@@ -37,6 +38,18 @@ export async function POST(req: Request) {
     avatarId: avatarId ? String(avatarId) : undefined,
     voiceId: voiceId ? String(voiceId) : undefined,
     consent: Boolean(consent),
+    assets: Array.isArray(assets)
+      ? (assets as unknown[]).map(String)
+      : typeof assets === "string"
+      ? (() => {
+          try {
+            const arr = JSON.parse(assets as string);
+            return Array.isArray(arr) ? arr.map(String) : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [],
     status: "draft",
   });
 

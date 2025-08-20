@@ -1,6 +1,7 @@
 "use client";
 import { useForm } from "react-hook-form";
 import axios from "axios";
+import CloudinaryUploader from "@/components/uploads/CloudinaryUploader";
 
 type InputType = "TEXT" | "IMAGE" | "AUDIO" | "VIDEO";
 type FormValues = {
@@ -10,6 +11,7 @@ type FormValues = {
   avatarId?: string;
   voiceId?: string;
   consent: boolean;
+  assets?: string[];
 };
 
 export default function VideoJobForm() {
@@ -46,6 +48,30 @@ export default function VideoJobForm() {
         {errors.title && (
           <p className="text-sm text-red-400">{errors.title.message}</p>
         )}
+      </div>
+
+      <div>
+        <label className="block text-sm mb-2">
+          Archivos (imágenes/audio/video)
+        </label>
+        <div className="flex gap-3 items-center">
+          <CloudinaryUploader
+            accept="auto"
+            multiple
+            onChange={(urls) => {
+              // set as hidden field value
+              (
+                document.getElementById("assets_field") as HTMLInputElement
+              ).value = JSON.stringify(urls);
+            }}
+          >
+            Subir desde dispositivo/cámara
+          </CloudinaryUploader>
+        </div>
+        <input id="assets_field" type="hidden" {...register("assets")} />
+        <p className="text-xs opacity-70 mt-1">
+          Los archivos subidos se adjuntarán al Job.
+        </p>
       </div>
 
       <div>
