@@ -53,6 +53,18 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
+    async signIn({ user }) {
+      try {
+        if ((user as any)?.email) {
+          await findOrCreateUserByEmail((user as any).email, {
+            name: (user as any).name || undefined,
+          });
+        }
+      } catch (e) {
+        return false;
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
