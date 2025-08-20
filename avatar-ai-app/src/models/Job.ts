@@ -12,6 +12,13 @@ export interface IJob {
   voiceId?: string;
   consent: boolean;
   assets?: string[];
+  mediaUrls?: string[];
+  providerJobId?: string;
+  resultUrl?: string;
+  error?: string;
+  heygenTaskId?: string;
+  outputUrl?: string;
+  errorMessage?: string;
   status: JobStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -31,6 +38,13 @@ const JobSchema = new Schema<IJob>(
     voiceId: { type: String },
     consent: { type: Boolean, default: false },
     assets: { type: [String], default: [] },
+    mediaUrls: { type: [String], default: [] },
+    providerJobId: { type: String },
+    resultUrl: { type: String },
+    error: { type: String },
+    heygenTaskId: { type: String },
+    outputUrl: { type: String },
+    errorMessage: { type: String },
     status: {
       type: String,
       enum: ["draft", "queued", "processing", "done", "error"],

@@ -71,10 +71,23 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
-      if (user) {
-        token.id = (user as any).id;
-        token.email = (user as any).email;
-        token.name = (user as any).name ?? null;
+      // On new sign-in, always resolve the canonical DB user and stamp its _id
+      if (user && (user as any).email) {
+        const dbUser = await findOrCreateUserByEmail((user as any).email, {
+          name: (user as any).name || undefined,
+        });
+        token.id = dbUser._id.toString();
+        token.email = dbUser.email;
+        token.name = dbUser.name ?? null;
+        return token;
+      }
+
+      // If token has no id yet (e.g., OAuth without adapter), backfill from DB by email
+      if (!token.id && token.email) {
+        const dbUser = await findOrCreateUserByEmail(token.email as string, {
+          name: (token.name as string) || undefined,
+        });
+        token.id = dbUser._id.toString();
       }
       return token;
     },

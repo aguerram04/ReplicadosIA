@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import JobsList from "@/components/dashboard/JobsList";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
@@ -42,15 +43,9 @@ export default async function DashboardPage() {
           Crear video
         </a>
       </div>
-      <div className="mt-6 grid gap-4 grid-cols-1 md:grid-cols-2">
-        <div className="rounded-lg border border-white/10 p-4">
-          <h2 className="font-medium">Créditos</h2>
-          <p className="text-3xl mt-2">0</p>
-        </div>
-        <div className="rounded-lg border border-white/10 p-4">
-          <h2 className="font-medium">Tus videos</h2>
-          <p className="text-white/60 mt-2">Aún no hay videos generados.</p>
-        </div>
+      <div className="mt-6">
+        <h2 className="font-medium mb-2">Tus Jobs</h2>
+        <JobsList />
       </div>
       <a
         href="/api/auth/signout"

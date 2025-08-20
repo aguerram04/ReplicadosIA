@@ -12,7 +12,6 @@ export async function POST(req: Request) {
 
   await connectToDatabase();
 
-  const body = await req.json().catch(() => ({}));
   const {
     title,
     script,
@@ -20,8 +19,8 @@ export async function POST(req: Request) {
     avatarId,
     voiceId,
     consent,
-    assets,
-  } = body as Record<string, unknown>;
+    mediaUrls = [],
+  } = (await req.json()) as any;
 
   if (!title || !script) {
     return NextResponse.json(
@@ -29,6 +28,12 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
+  const mediaList = Array.isArray(mediaUrls)
+    ? (mediaUrls as unknown[]).map(String)
+    : typeof mediaUrls === "string"
+    ? [String(mediaUrls)]
+    : [];
 
   const job = await Job.create({
     userId: String((session.user as any).id),
@@ -38,18 +43,8 @@ export async function POST(req: Request) {
     avatarId: avatarId ? String(avatarId) : undefined,
     voiceId: voiceId ? String(voiceId) : undefined,
     consent: Boolean(consent),
-    assets: Array.isArray(assets)
-      ? (assets as unknown[]).map(String)
-      : typeof assets === "string"
-      ? (() => {
-          try {
-            const arr = JSON.parse(assets as string);
-            return Array.isArray(arr) ? arr.map(String) : [];
-          } catch {
-            return [];
-          }
-        })()
-      : [],
+    mediaUrls: mediaList,
+    assets: mediaList,
     status: "draft",
   });
 

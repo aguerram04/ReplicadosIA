@@ -1,7 +1,8 @@
 "use client";
 import { useForm } from "react-hook-form";
 import axios from "axios";
-import CloudinaryUploader from "@/components/uploads/CloudinaryUploader";
+import { useState } from "react";
+import MediaUploader from "@/components/uploads/MediaUploader";
 
 type InputType = "TEXT" | "IMAGE" | "AUDIO" | "VIDEO";
 type FormValues = {
@@ -12,6 +13,7 @@ type FormValues = {
   voiceId?: string;
   consent: boolean;
   assets?: string[];
+  mediaUrls?: string[];
 };
 
 export default function VideoJobForm() {
@@ -26,11 +28,19 @@ export default function VideoJobForm() {
   });
 
   const inputType = watch("inputType");
+  const [media, setMedia] = useState<string[]>([]);
+  function handleAdd(urls: string[]) {
+    setMedia((prev) => [...prev, ...urls]);
+  }
+  function removeAt(i: number) {
+    setMedia((prev) => prev.filter((_, idx) => idx !== i));
+  }
 
   async function onSubmit(data: FormValues) {
     try {
-      const res = await axios.post("/api/jobs", data);
+      const res = await axios.post("/api/jobs", { ...data, mediaUrls: media });
       alert("Solicitud creada: " + res.data?.id);
+      setMedia([]);
       reset();
     } catch (e: any) {
       alert(e?.response?.data?.error || "Error creando la solicitud");
@@ -50,27 +60,32 @@ export default function VideoJobForm() {
         )}
       </div>
 
-      <div>
-        <label className="block text-sm mb-2">
-          Archivos (imágenes/audio/video)
+      <div className="space-y-3">
+        <label className="block text-sm">
+          Archivos (imágenes, audio, video, cámara)
         </label>
-        <div className="flex gap-3 items-center">
-          <CloudinaryUploader
-            accept="auto"
-            multiple
-            onChange={(urls) => {
-              // set as hidden field value
-              (
-                document.getElementById("assets_field") as HTMLInputElement
-              ).value = JSON.stringify(urls);
-            }}
-          >
-            Subir desde dispositivo/cámara
-          </CloudinaryUploader>
-        </div>
-        <input id="assets_field" type="hidden" {...register("assets")} />
-        <p className="text-xs opacity-70 mt-1">
-          Los archivos subidos se adjuntarán al Job.
+        <MediaUploader onAdd={handleAdd} />
+        {media.length > 0 && (
+          <ul className="mt-2 space-y-2 text-sm">
+            {media.map((u, i) => (
+              <li
+                key={`${u}-${i}`}
+                className="flex justify-between gap-3 border border-border rounded-2xl px-3 py-2"
+              >
+                <span className="truncate">{u}</span>
+                <button
+                  type="button"
+                  onClick={() => removeAt(i)}
+                  className="btn-outline"
+                >
+                  Quitar
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs opacity-70">
+          Se adjuntarán {media.length} archivo(s).
         </p>
       </div>
 
