@@ -17,6 +17,12 @@ export default async function DashboardPage() {
         >
           Ir a login
         </a>
+        <a
+          href="/"
+          className="inline-block mt-4 ml-3 px-4 py-2 rounded-md border border-white/20"
+        >
+          Home
+        </a>
       </main>
     );
   }

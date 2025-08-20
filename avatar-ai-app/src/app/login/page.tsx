@@ -59,6 +59,14 @@ export default function LoginPage() {
           Continuar con GitHub
         </button>
       </div>
+      <div className="mt-6">
+        <a
+          href="/"
+          className="block w-full text-center px-4 py-2 rounded-md border border-white/20"
+        >
+          Home
+        </a>
+      </div>
     </main>
   );
 }
