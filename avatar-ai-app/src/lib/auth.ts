@@ -2,7 +2,12 @@ import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
-import { findOrCreateUserByEmail } from "@/lib/db-helpers";
+import {
+  findOrCreateUserByEmail,
+  recordUserLoginEvent,
+  recordUserLogoutByUser,
+} from "@/lib/db-helpers";
+import { headers } from "next/headers";
 
 const providers: NextAuthOptions["providers"] = [];
 
@@ -80,6 +85,38 @@ export const authOptions: NextAuthOptions = {
         session.user.name = (token.name as string) ?? null;
       }
       return session;
+    },
+  },
+  events: {
+    async signIn({ user, account }) {
+      try {
+        const hdrs = headers();
+        const ip =
+          hdrs.get("x-forwarded-for") || hdrs.get("x-real-ip") || undefined;
+        const userAgent = hdrs.get("user-agent") || undefined;
+        if ((user as any)?.email) {
+          const dbUser = await findOrCreateUserByEmail((user as any).email, {
+            name: (user as any).name || undefined,
+          });
+          await recordUserLoginEvent({
+            userId: dbUser._id.toString(),
+            email: dbUser.email,
+            name: dbUser.name ?? null,
+            provider: account?.provider,
+            ip,
+            userAgent,
+            success: true,
+          });
+        }
+      } catch {}
+    },
+    async signOut({ token }) {
+      try {
+        const userId = (token as any)?.id as string | undefined;
+        if (userId) {
+          await recordUserLogoutByUser({ userId });
+        }
+      } catch {}
     },
   },
 };

@@ -22,6 +22,41 @@ export async function findOrCreateUserByEmail(
   return user;
 }
 
+export async function recordUserLoginEvent(params: {
+  userId: string;
+  email: string;
+  name?: string | null;
+  provider?: string;
+  ip?: string;
+  userAgent?: string;
+  success: boolean;
+  error?: string;
+}) {
+  await connectToDatabase();
+  const { UserSession } = await import("@/models");
+  return UserSession.create({
+    userId: new Types.ObjectId(params.userId),
+    email: params.email,
+    name: params.name ?? undefined,
+    provider: params.provider,
+    ip: params.ip,
+    userAgent: params.userAgent,
+    success: params.success,
+    error: params.error,
+    loginAt: new Date(),
+  });
+}
+
+export async function recordUserLogoutByUser(params: { userId: string }) {
+  await connectToDatabase();
+  const { UserSession } = await import("@/models");
+  await UserSession.findOneAndUpdate(
+    { userId: new Types.ObjectId(params.userId), logoutAt: { $exists: false } },
+    { $set: { logoutAt: new Date() } },
+    { sort: { loginAt: -1 } }
+  );
+}
+
 export async function addCredits(
   userId: string,
   amount: number,
