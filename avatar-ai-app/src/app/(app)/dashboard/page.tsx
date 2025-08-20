@@ -28,6 +28,14 @@ export default async function DashboardPage() {
         Bienvenido,{" "}
         {(session as any).user?.name || (session as any).user?.email}.
       </p>
+      <div className="mt-6">
+        <a
+          href="/create"
+          className="inline-block px-4 py-2 rounded-md bg-white text-black"
+        >
+          Crear video
+        </a>
+      </div>
       <div className="mt-6 grid gap-4 grid-cols-1 md:grid-cols-2">
         <div className="rounded-lg border border-white/10 p-4">
           <h2 className="font-medium">Créditos</h2>
