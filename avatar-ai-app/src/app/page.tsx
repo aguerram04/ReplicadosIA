@@ -9,7 +9,7 @@ export default function Home() {
           Genera videos con avatares en minutos.
         </p>
         <div className="flex gap-4">
-          <a className="btn-primary" href="/dashboard">
+          <a className="btn-accent" href="/dashboard">
             Ir al Dashboard
           </a>
         </div>

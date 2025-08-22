@@ -29,9 +29,9 @@ export async function POST(
     await job.save();
 
     const resp = await heygenCreateVideoJob({
-      avatar_id: job.avatarId,
-      voice_id: job.voiceId,
-      script: job.script,
+      avatar_id: job.avatarId || undefined,
+      voice_id: job.voiceId || undefined,
+      script: job.script || "",
       assets: job.mediaUrls?.length ? job.mediaUrls : job.assets,
       callback_url: `${baseUrl}/api/heygen/webhook?jobId=${job._id.toString()}`,
     });

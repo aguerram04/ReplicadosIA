@@ -4,8 +4,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #0b0b0d;
-  --foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #454545;
+  --accent: #008f39; /* primary green */
+  --accent-2: #007532; /* hover/darker */
+  --accent-3: #0b7a39; /* nav/default */
+  --accent-blue: #007bff; /* primary blue accent 1 */
 }
 
 html,
@@ -16,7 +20,7 @@ body,
 
 body {
   color: var(--foreground);
-  background: linear-gradient(180deg, #0b0b0d 0%, #0e0f14 100%);
+  background: #ffffff;
 }
 @layer base {
   h1 {
@@ -36,5 +40,27 @@ body {
 @layer components {
   .container {
     @apply mx-auto;
+  }
+  .btn-primary {
+    @apply rounded-lg px-4 py-2 text-white;
+    background: var(--accent);
+  }
+  .btn-primary:hover {
+    background: var(--accent-2);
+  }
+  .btn-outline {
+    @apply rounded-lg px-4 py-2 border;
+    border-color: #e6e8eb;
+    color: var(--foreground);
+  }
+  .btn-outline:hover {
+    background: #f6f7f9;
+  }
+  .btn-accent {
+    @apply rounded-lg px-4 py-2 text-white;
+    background: var(--accent-blue);
+  }
+  .btn-accent:hover {
+    background: #006ae0;
   }
 }

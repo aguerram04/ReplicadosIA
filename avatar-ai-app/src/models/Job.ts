@@ -6,7 +6,7 @@ export type JobStatus = "draft" | "queued" | "processing" | "done" | "error";
 export interface IJob {
   userId: string;
   title: string;
-  script: string;
+  script?: string;
   inputType: JobInputType;
   avatarId?: string;
   voiceId?: string;
@@ -19,6 +19,11 @@ export interface IJob {
   heygenTaskId?: string;
   outputUrl?: string;
   errorMessage?: string;
+  // Translate fields
+  sourceLang?: string;
+  targetLang?: string;
+  translateTaskId?: string;
+  translateUrl?: string;
   status: JobStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -28,7 +33,7 @@ const JobSchema = new Schema<IJob>(
   {
     userId: { type: String, required: true, index: true },
     title: { type: String, required: true },
-    script: { type: String, required: true },
+    script: { type: String, required: false, default: "" },
     inputType: {
       type: String,
       enum: ["TEXT", "IMAGE", "AUDIO", "VIDEO"],
@@ -45,6 +50,10 @@ const JobSchema = new Schema<IJob>(
     heygenTaskId: { type: String },
     outputUrl: { type: String },
     errorMessage: { type: String },
+    sourceLang: { type: String },
+    targetLang: { type: String },
+    translateTaskId: { type: String },
+    translateUrl: { type: String },
     status: {
       type: String,
       enum: ["draft", "queued", "processing", "done", "error"],

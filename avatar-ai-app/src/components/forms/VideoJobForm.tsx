@@ -64,7 +64,11 @@ export default function VideoJobForm() {
         <label className="block text-sm">
           Archivos (imágenes, audio, video, cámara)
         </label>
-        <MediaUploader onAdd={handleAdd} />
+        <div className="flex">
+          <MediaUploader onAdd={handleAdd}>
+            <span className="btn-accent">Subir desde dispositivo/cámara</span>
+          </MediaUploader>
+        </div>
         {media.length > 0 && (
           <ul className="mt-2 space-y-2 text-sm">
             {media.map((u, i) => (
@@ -161,7 +165,7 @@ export default function VideoJobForm() {
       <div className="flex gap-3">
         <button
           disabled={isSubmitting}
-          className="btn-primary disabled:opacity-60"
+          className="btn-accent disabled:opacity-60"
         >
           {isSubmitting ? "Enviando..." : "Crear solicitud"}
         </button>

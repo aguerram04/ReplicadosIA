@@ -35,12 +35,12 @@ export default async function DashboardPage() {
         Bienvenido,{" "}
         {(session as any).user?.name || (session as any).user?.email}.
       </p>
-      <div className="mt-6">
-        <a
-          href="/create"
-          className="inline-block px-4 py-2 rounded-md bg-white text-black"
-        >
-          Crear video
+      <div className="mt-6 flex gap-3">
+        <a href="/create" className="btn-accent">
+          Crear video avatar
+        </a>
+        <a href="/translate" className="btn-accent">
+          Traducir video
         </a>
       </div>
       <div className="mt-6">
