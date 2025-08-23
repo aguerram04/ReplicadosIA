@@ -35,6 +35,9 @@ body {
   a {
     @apply underline-offset-4 hover:underline;
   }
+  label {
+    @apply font-semibold;
+  }
 }
 
 @layer components {
@@ -70,5 +73,19 @@ body {
     background: var(--accent);
     color: #ffffff;
     border-color: var(--accent);
+  }
+
+  /* Gold borders helper for forms */
+  .gold-fields input,
+  .gold-fields textarea,
+  .gold-fields select {
+    border-color: #d4af37 !important; /* gold */
+  }
+  .gold-fields input:focus,
+  .gold-fields textarea:focus,
+  .gold-fields select:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px #d4af37 inset;
+    border-color: #d4af37 !important;
   }
 }

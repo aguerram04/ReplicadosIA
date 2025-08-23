@@ -18,8 +18,16 @@ export async function POST(req: Request) {
     inputType = "TEXT",
     avatarId,
     voiceId,
+    voiceSpeed,
     consent,
     mediaUrls = [],
+    width,
+    height,
+    backgroundType,
+    backgroundColor,
+    backgroundImageUrl,
+    backgroundVideoUrl,
+    backgroundPlayStyle,
   } = (await req.json()) as any;
 
   if (!title || !script) {
@@ -42,9 +50,23 @@ export async function POST(req: Request) {
     inputType: String(inputType),
     avatarId: avatarId ? String(avatarId) : undefined,
     voiceId: voiceId ? String(voiceId) : undefined,
+    voiceSpeed: typeof voiceSpeed === "number" ? voiceSpeed : undefined,
     consent: Boolean(consent),
     mediaUrls: mediaList,
     assets: mediaList,
+    width: typeof width === "number" ? width : undefined,
+    height: typeof height === "number" ? height : undefined,
+    backgroundType: backgroundType ? String(backgroundType) : undefined,
+    backgroundColor: backgroundColor ? String(backgroundColor) : undefined,
+    backgroundImageUrl: backgroundImageUrl
+      ? String(backgroundImageUrl)
+      : undefined,
+    backgroundVideoUrl: backgroundVideoUrl
+      ? String(backgroundVideoUrl)
+      : undefined,
+    backgroundPlayStyle: backgroundPlayStyle
+      ? String(backgroundPlayStyle)
+      : undefined,
     status: "draft",
   });
 

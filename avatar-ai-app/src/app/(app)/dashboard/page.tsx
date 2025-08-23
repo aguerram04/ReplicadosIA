@@ -42,6 +42,12 @@ export default async function DashboardPage() {
         <a href="/translate" className="btn-accent">
           Traducir video
         </a>
+        <a href="/template" className="btn-accent">
+          Crear templete
+        </a>
+        <a href="/photos" className="btn-accent">
+          Crear fotos
+        </a>
       </div>
       <div className="mt-6">
         <h2 className="font-medium mb-2">Tus Trabajos</h2>

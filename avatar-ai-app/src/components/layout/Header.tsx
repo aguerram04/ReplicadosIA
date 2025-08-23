@@ -39,13 +39,25 @@ export default async function Header() {
             href="/create"
             className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
-            Crear
+            Video
+          </Link>
+          <Link
+            href="/photos"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+          >
+            Fotos
           </Link>
           <Link
             href="/translate"
             className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
             Traducir
+          </Link>
+          <Link
+            href="/template"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+          >
+            Template
           </Link>
           <Link
             href="/avatarid"

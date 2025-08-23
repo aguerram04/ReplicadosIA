@@ -35,6 +35,28 @@ export async function POST(
   }
 
   try {
+    // Build background block if configured
+    let background: any = undefined;
+    const bgType = (job as any).backgroundType as
+      | "none"
+      | "color"
+      | "image"
+      | "video"
+      | undefined;
+    if (bgType && bgType !== "none") {
+      if (bgType === "color" && (job as any).backgroundColor) {
+        background = { type: "color", value: (job as any).backgroundColor };
+      } else if (bgType === "image" && (job as any).backgroundImageUrl) {
+        background = { type: "image", url: (job as any).backgroundImageUrl };
+      } else if (bgType === "video" && (job as any).backgroundVideoUrl) {
+        background = {
+          type: "video",
+          url: (job as any).backgroundVideoUrl,
+          play_style: (job as any).backgroundPlayStyle || undefined,
+        };
+      }
+    }
+
     // Build v2 generate payload
     const payload: any = {
       video_inputs: [
@@ -44,17 +66,35 @@ export async function POST(
             avatar_id: job.avatarId,
             avatar_style: "normal",
           },
-          voice: job.script
-            ? {
-                type: "text",
-                input_text: job.script,
-                voice_id: job.voiceId,
-                speed: 1.0,
-              }
-            : undefined,
+          voice:
+            (job as any).mediaUrls && (job as any).mediaUrls.length > 0
+              ? {
+                  type: "audio",
+                  url:
+                    (job as any).mediaUrls.find((u: string) =>
+                      /\.(mp3|wav|m4a|aac)$/i.test(u)
+                    ) || (job as any).mediaUrls[0],
+                }
+              : job.script
+              ? {
+                  type: "text",
+                  input_text: job.script,
+                  voice_id: job.voiceId,
+                  speed:
+                    typeof (job as any).voiceSpeed === "number"
+                      ? (job as any).voiceSpeed
+                      : 1.0,
+                }
+              : undefined,
+          background,
         },
       ],
-      dimension: { width: 1280, height: 720 },
+      dimension: {
+        width:
+          typeof (job as any).width === "number" ? (job as any).width : 1280,
+        height:
+          typeof (job as any).height === "number" ? (job as any).height : 720,
+      },
     };
 
     const gen = await heygenVideoGenerate(payload);
