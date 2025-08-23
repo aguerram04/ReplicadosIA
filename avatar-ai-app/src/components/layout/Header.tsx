@@ -22,30 +22,36 @@ export default async function Header() {
         </Link>
 
         {/* Center: Navigation */}
-        <nav className="hidden gap-5 md:flex">
+        <nav className="hidden gap-5 md:flex md:items-center">
           <Link
             href="/"
-            className="text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
             Inicio
           </Link>
           <Link
             href="/dashboard"
-            className="text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
             Tablero
           </Link>
           <Link
             href="/create"
-            className="text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
             Crear
           </Link>
           <Link
             href="/translate"
-            className="text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
             Traducir
+          </Link>
+          <Link
+            href="/avatarid"
+            className="btn-accent h-8 inline-flex items-center py-1"
+          >
+            AvatarID
           </Link>
         </nav>
 

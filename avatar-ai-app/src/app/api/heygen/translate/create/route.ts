@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { jobId, videoUrl, sourceLang, targetLang } = (await req
+  const { jobId, videoUrl, sourceLang, targetLang, title } = (await req
     .json()
     .catch(() => ({}))) as any;
   if (!jobId && !videoUrl) {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     ? await Job.findOne({ _id: jobId, userId: String(session.user.id) })
     : await Job.create({
         userId: String(session.user.id),
-        title: `Translate ${new Date().toISOString()}`,
+        title: String(title || `Translate ${new Date().toISOString()}`),
         script: "", // not used for translate
         inputType: "VIDEO",
         mediaUrls: [String(videoUrl)],

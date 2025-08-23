@@ -46,3 +46,23 @@ export async function heygenTranslateStatus(id: string) {
   const { data } = await heygen.get(`/v2/video_translate/${id}`);
   return data as { data?: { status?: string; video_url?: string } };
 }
+
+// v2 avatar video generate
+export async function heygenVideoGenerate(payload: any) {
+  const { data } = await heygen.post("/v2/video/generate", payload);
+  return data as { data?: { video_id?: string } };
+}
+
+// v1 status API (still used for video status)
+export async function heygenVideoStatus(videoId: string) {
+  const { data } = await heygen.get(`/v1/video_status.get`, {
+    params: { video_id: videoId },
+  });
+  return data as { data?: { status?: string; video_url?: string } };
+}
+
+// v2 list avatars (for selector)
+export async function heygenListAvatars() {
+  const { data } = await heygen.get("/v2/avatars");
+  return data as { data?: any };
+}

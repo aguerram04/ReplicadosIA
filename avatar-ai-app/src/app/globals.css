@@ -63,4 +63,12 @@ body {
   .btn-accent:hover {
     background: #006ae0;
   }
+  .chip {
+    @apply rounded-2xl border px-3 py-2 text-center cursor-pointer;
+  }
+  .chip-selected {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+  }
 }

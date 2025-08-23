@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Job } from "@/models";
-import { heygenCreateVideoJob } from "@/lib/heygen";
+import { heygenVideoGenerate, heygenVideoStatus } from "@/lib/heygen";
 
 export async function POST(
   _req: Request,
@@ -20,34 +20,90 @@ export async function POST(
   });
   if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || "";
-  if (!baseUrl)
-    return NextResponse.json({ error: "Base URL missing" }, { status: 500 });
+  // Validate required fields for generation
+  if (!job.avatarId) {
+    return NextResponse.json(
+      { error: "Falta Avatar ID para generar el video" },
+      { status: 400 }
+    );
+  }
+  if (!job.script || !job.script.trim()) {
+    return NextResponse.json(
+      { error: "Falta el guión (script) para generar el video" },
+      { status: 400 }
+    );
+  }
 
   try {
+    // Build v2 generate payload
+    const payload: any = {
+      video_inputs: [
+        {
+          character: {
+            type: "avatar",
+            avatar_id: job.avatarId,
+            avatar_style: "normal",
+          },
+          voice: job.script
+            ? {
+                type: "text",
+                input_text: job.script,
+                voice_id: job.voiceId,
+                speed: 1.0,
+              }
+            : undefined,
+        },
+      ],
+      dimension: { width: 1280, height: 720 },
+    };
+
+    const gen = await heygenVideoGenerate(payload);
+    const providerId = (gen as any)?.data?.video_id || "";
+    if (!providerId) {
+      job.status = "error";
+      job.error = JSON.stringify(gen);
+      await job.save();
+      return NextResponse.json(
+        { error: "HeyGen no devolvió video_id", detail: gen },
+        { status: 502 }
+      );
+    }
+    job.providerJobId = providerId;
     job.status = "queued";
     await job.save();
 
-    const resp = await heygenCreateVideoJob({
-      avatar_id: job.avatarId || undefined,
-      voice_id: job.voiceId || undefined,
-      script: job.script || "",
-      assets: job.mediaUrls?.length ? job.mediaUrls : job.assets,
-      callback_url: `${baseUrl}/api/heygen/webhook?jobId=${job._id.toString()}`,
-    });
-    const providerId = resp?.data?.video_id || "";
-    job.providerJobId = providerId;
-    job.status = providerId ? "processing" : "queued";
-    await job.save();
+    // Optional immediate status check to move from queued -> processing
+    if (providerId) {
+      try {
+        const statusResp: any = await heygenVideoStatus(providerId);
+        const data = statusResp?.data || statusResp;
+        const st: string | undefined = data?.status;
+        if (st && /pending|running|processing/i.test(st)) {
+          job.status = "processing";
+          await job.save();
+        }
+      } catch {
+        // ignore immediate status errors
+      }
+    }
+
     return NextResponse.json({
       id: job._id.toString(),
       providerJobId: providerId,
       status: job.status,
     });
   } catch (e: any) {
+    const apiDetail = e?.response?.data || e?.data;
     job.status = "error";
-    job.error = e?.message || String(e);
+    job.error =
+      apiDetail?.error?.message ||
+      apiDetail?.message ||
+      e?.message ||
+      String(e);
     await job.save();
-    return NextResponse.json({ error: job.error }, { status: 500 });
+    return NextResponse.json(
+      { error: job.error, detail: apiDetail },
+      { status: 500 }
+    );
   }
 }

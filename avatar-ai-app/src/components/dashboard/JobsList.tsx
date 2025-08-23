@@ -9,15 +9,30 @@ type Job = {
   outputUrl?: string;
   resultUrl?: string;
   translateUrl?: string;
+  translateTaskId?: string;
+  providerJobId?: string;
+  error?: string;
   createdAt: string;
 };
 
 export default function JobsList() {
   const [jobs, setJobs] = useState<Job[]>([]);
-  async function load() {
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 3000);
+  }
+
+  async function fetchJobsList(): Promise<Job[]> {
     const r = await fetch("/api/jobs", { cache: "no-store" });
     const j = await r.json();
-    setJobs(j.jobs || []);
+    return j.jobs || [];
+  }
+
+  async function load() {
+    const list = await fetchJobsList();
+    setJobs(list);
   }
   async function syncTranslate(id: string) {
     await fetch(`/api/heygen/translate/status?jobId=${id}`);
@@ -27,6 +42,55 @@ export default function JobsList() {
     if (!confirm("¿Borrar este job?")) return;
     await fetch(`/api/jobs/${id}`, { method: "DELETE" });
     await load();
+  }
+  async function syncJob(job: Job) {
+    try {
+      if (job.translateTaskId) {
+        await fetch(`/api/heygen/translate/status?jobId=${job._id}`);
+      } else if (job.providerJobId) {
+        await fetch(`/api/heygen/video/status?jobId=${job._id}`);
+      }
+    } catch {}
+    const list = await fetchJobsList();
+    setJobs(list);
+    const updated = list.find((j) => j._id === job._id);
+    const newStatus = updated?.status || job.status;
+    showToast(`Estado actualizado: ${job.title} → ${newStatus}`);
+  }
+
+  async function startJob(job: Job) {
+    const previousStatus = job.status;
+    try {
+      const res = await fetch(`/api/jobs/${job._id}/process`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const j = await res.json();
+          detail = j?.error || "";
+        } catch {}
+        showToast(
+          `Error al generar: ${job.title}${detail ? ` — ${detail}` : ""}`
+        );
+      }
+    } catch (e: any) {
+      showToast(`Error de red al generar: ${job.title}`);
+    }
+    const list = await fetchJobsList();
+    setJobs(list);
+    const updated = list.find((j) => j._id === job._id);
+    const newStatus = updated?.status || job.status;
+    if (previousStatus === "draft" && newStatus !== "draft") {
+      showToast(`Video enviado a producción: ${job.title} → ${newStatus}`);
+    } else {
+      const err = updated?.error;
+      showToast(
+        `Estado actualizado: ${job.title} → ${newStatus}${
+          err ? ` — ${err}` : ""
+        }`
+      );
+    }
   }
   useEffect(() => {
     load();
@@ -71,37 +135,33 @@ export default function JobsList() {
                   target="_blank"
                   className="btn-primary"
                 >
-                  Ver video traducido
+                  {job.translateUrl
+                    ? "Ver video traducido"
+                    : "Ver video Avatar"}
                 </a>
               )}
-            {(job.status === "draft" || job.status === "error") && (
-              <button
-                className="btn-accent"
-                onClick={() =>
-                  fetch(`/api/jobs/${job._id}/start`, { method: "POST" })
-                }
-              >
+            {!job.translateTaskId && job.status !== "done" && (
+              <button className="btn-accent" onClick={() => startJob(job)}>
                 Generar video avatar
               </button>
             )}
             <a href={`/jobs/${job._id}`} className="btn-outline">
               Detalles
             </a>
-            <button
-              className="btn-outline"
-              onClick={() => syncTranslate(job._id)}
-            >
-              Actualizar traducción
-            </button>
             <button className="btn-outline" onClick={() => remove(job._id)}>
               Borrar
             </button>
-            <button className="btn-outline" onClick={load}>
-              Refrescar
+            <button className="btn-outline" onClick={() => syncJob(job)}>
+              Actualizar estado
             </button>
           </div>
         </div>
       ))}
+      {toast && (
+        <div className="fixed bottom-4 right-4 rounded-2xl border border-border bg-black/80 text-white px-4 py-3 shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-semibold">Dashboard</h1>
+      <h1 className="text-3xl font-semibold">Tablero</h1>
       <p className="mt-2 text-white/70">
         Bienvenido,{" "}
         {(session as any).user?.name || (session as any).user?.email}.
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
         </a>
       </div>
       <div className="mt-6">
-        <h2 className="font-medium mb-2">Tus Jobs</h2>
+        <h2 className="font-medium mb-2">Tus Trabajos</h2>
         <JobsList />
       </div>
       <a

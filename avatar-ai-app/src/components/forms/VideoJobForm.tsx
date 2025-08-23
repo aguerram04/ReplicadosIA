@@ -29,6 +29,7 @@ export default function VideoJobForm() {
 
   const inputType = watch("inputType");
   const [media, setMedia] = useState<string[]>([]);
+
   function handleAdd(urls: string[]) {
     setMedia((prev) => [...prev, ...urls]);
   }
@@ -36,14 +37,43 @@ export default function VideoJobForm() {
     setMedia((prev) => prev.filter((_, idx) => idx !== i));
   }
 
+  const [toast, setToast] = useState<string | null>(null);
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 3000);
+  }
+
   async function onSubmit(data: FormValues) {
     try {
       const res = await axios.post("/api/jobs", { ...data, mediaUrls: media });
-      alert("Solicitud creada: " + res.data?.id);
+      const newId: string | undefined = res.data?.id;
+      if (!newId) {
+        showToast("No se pudo crear el trabajo");
+        return;
+      }
+      // Enviar a producción inmediatamente
+      const proc = await fetch(`/api/jobs/${newId}/process`, {
+        method: "POST",
+      });
+      let statusLabel = "";
+      if (proc.ok) {
+        try {
+          const j = await proc.json();
+          statusLabel = j?.status || "queued";
+        } catch {}
+        showToast(`Video enviado a producción → ${statusLabel}`);
+      } else {
+        let detail = "";
+        try {
+          const j = await proc.json();
+          detail = j?.error || j?.detail || "";
+        } catch {}
+        showToast(`Error al generar: ${detail || proc.statusText}`);
+      }
       setMedia([]);
       reset();
     } catch (e: any) {
-      alert(e?.response?.data?.error || "Error creando la solicitud");
+      showToast(e?.response?.data?.error || "Error creando la solicitud");
     }
   }
 
@@ -110,8 +140,8 @@ export default function VideoJobForm() {
           {(["TEXT", "IMAGE", "AUDIO", "VIDEO"] as InputType[]).map((t) => (
             <label
               key={t}
-              className={`cursor-pointer rounded-2xl border px-3 py-2 text-center ${
-                inputType === t ? "border-foreground" : "border-border"
+              className={`chip ${
+                inputType === t ? "chip-selected" : "border-border"
               }`}
             >
               <input
@@ -131,7 +161,7 @@ export default function VideoJobForm() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm mb-1">Avatar ID (HeyGen)</label>
+          <label className="block text-sm mb-1">Avatar ID (ReplicadosIA)</label>
           <input
             className="w-full rounded-2xl border border-border bg-transparent p-3"
             placeholder="ej. avatar_123"
@@ -167,12 +197,18 @@ export default function VideoJobForm() {
           disabled={isSubmitting}
           className="btn-accent disabled:opacity-60"
         >
-          {isSubmitting ? "Enviando..." : "Crear solicitud"}
+          {isSubmitting ? "Enviando..." : "Generar video avatar"}
         </button>
         <button type="button" onClick={() => reset()} className="btn-outline">
           Limpiar
         </button>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-4 right-4 rounded-2xl border border-border bg-black/80 text-white px-4 py-3 shadow-lg">
+          {toast}
+        </div>
+      )}
     </form>
   );
 }
