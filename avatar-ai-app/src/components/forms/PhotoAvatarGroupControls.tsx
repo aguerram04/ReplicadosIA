@@ -128,9 +128,6 @@ export default function PhotoAvatarGroupControls() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mt-10 mb-4 text-center">
-        Grupos de Foto Avatar
-      </h2>
       <div className="space-y-4">
         <div className="grid md:grid-cols-2 gap-3">
           <div>

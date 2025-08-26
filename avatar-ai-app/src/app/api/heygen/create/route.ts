@@ -55,7 +55,10 @@ export async function POST(req: Request) {
       { $set: { status: "error", errorMessage: e?.message || "HeyGen error" } }
     );
     return NextResponse.json(
-      { error: "HeyGen API error", detail: e?.response?.data || e?.message },
+      {
+        error: "ReplicadosIA api Error",
+        detail: e?.response?.data || e?.message,
+      },
       { status: 500 }
     );
   }

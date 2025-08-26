@@ -69,9 +69,6 @@ export default function PhotoAvatarEffects() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mt-10 mb-4 text-center">
-        Motion & Sound
-      </h2>
       <div className="space-y-3">
         <div className="grid md:grid-cols-2 gap-3">
           <div className="md:col-span-2">

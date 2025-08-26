@@ -13,14 +13,25 @@ export default function PhotosPage() {
             Ir al Tablero
           </a>
         </div>
-        <div className="rounded-2xl border border-[#e6e8eb] bg-[#f6f7f9] p-6">
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            AI Avatar Photos
-          </h1>
+        
+        {/* Primera sección: AI Avatar Photos */}
+        <div className="rounded-2xl border border-[#e6e8eb] bg-[#f6f7f9] p-6 mb-8">
           <PhotoAvatarGenerator />
-          <hr className="my-8 border-[#e6e8eb]" />
+        </div>
+
+        {/* Segunda sección: Grupos de Foto Avatar */}
+        <div className="rounded-2xl border border-[#e6e8eb] bg-[#f6f7f9] p-6 mb-8">
+          <h2 className="text-2xl font-semibold mb-6 text-center">
+            Grupos de Foto Avatar
+          </h2>
           <PhotoAvatarGroupControls />
-          <hr className="my-8 border-[#e6e8eb]" />
+        </div>
+
+        {/* Tercera sección: Motion & Sound */}
+        <div className="rounded-2xl border border-[#e6e8eb] bg-[#f6f7f9] p-6">
+          <h2 className="text-2xl font-semibold mb-6 text-center">
+            Motion & Sound
+          </h2>
           <PhotoAvatarEffects />
         </div>
       </div>
