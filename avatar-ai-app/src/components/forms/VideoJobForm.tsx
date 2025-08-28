@@ -1,7 +1,9 @@
 "use client";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MediaUploader from "@/components/uploads/MediaUploader";
 
 type InputType = "TEXT" | "IMAGE" | "AUDIO" | "VIDEO";
@@ -24,6 +26,84 @@ type FormValues = {
   backgroundPlayStyle?: "fit_to_scene" | "freeze" | "loop" | "once";
   webmTransparent?: boolean;
 };
+
+const inputTypeEnum = z.enum(["TEXT", "IMAGE", "AUDIO", "VIDEO"]);
+const backgroundTypeEnum = z.enum(["none", "color", "image", "video"]);
+
+const formSchema = z
+  .object({
+    title: z.string().min(1, "El título es obligatorio"),
+    script: z.string().min(1, "El guión es obligatorio"),
+    inputType: inputTypeEnum,
+    avatarId: z.string().optional(),
+    voiceId: z.string().optional(),
+    voiceSpeed: z
+      .number({ invalid_type_error: "Debe ser un número" })
+      .min(0.5, "Mínimo 0.5")
+      .max(2, "Máximo 2.0")
+      .optional(),
+    consent: z.literal(true, {
+      errorMap: () => ({ message: "Debes aceptar el consentimiento." }),
+    }),
+    assets: z.array(z.string()).optional(),
+    mediaUrls: z.array(z.string()).optional(),
+    width: z.number().optional(),
+    height: z.number().optional(),
+    backgroundType: backgroundTypeEnum,
+    backgroundColor: z.string().optional(),
+    backgroundImageUrl: z.string().url("URL inválida").optional(),
+    backgroundVideoUrl: z.string().url("URL inválida").optional(),
+    backgroundPlayStyle: z
+      .enum(["fit_to_scene", "freeze", "loop", "once"])
+      .optional(),
+    webmTransparent: z.boolean().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.backgroundType === "color") {
+      const color = (val.backgroundColor || "").trim();
+      if (color && !/^#([0-9A-Fa-f]{6})$/.test(color)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["backgroundColor"],
+          message: "Color inválido. Usa formato hex #RRGGBB",
+        });
+      }
+    }
+    if (val.backgroundType === "image") {
+      if (!val.backgroundImageUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["backgroundImageUrl"],
+          message: "Debes especificar la URL de la imagen de fondo",
+        });
+      } else if (
+        !/\.(png|jpg|jpeg)$/i.test(new URL(val.backgroundImageUrl).pathname)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["backgroundImageUrl"],
+          message: "La imagen debe ser .png/.jpg/.jpeg",
+        });
+      }
+    }
+    if (val.backgroundType === "video") {
+      if (!val.backgroundVideoUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["backgroundVideoUrl"],
+          message: "Debes especificar la URL del video de fondo",
+        });
+      } else if (
+        !/\.(mp4|webm)$/i.test(new URL(val.backgroundVideoUrl).pathname)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["backgroundVideoUrl"],
+          message: "El video debe ser .mp4 o .webm",
+        });
+      }
+    }
+  });
 
 export default function VideoJobForm({
   labelsBelow = false,
@@ -48,12 +128,13 @@ export default function VideoJobForm({
     watch,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
+  } = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: "",
       script: "",
       inputType: "TEXT",
-      consent: false,
+      consent: false as any,
       backgroundType: "none",
       webmTransparent: defaultWebm,
     },
@@ -79,7 +160,29 @@ export default function VideoJobForm({
     window.setTimeout(() => setToast(null), 3000);
   }
 
-  async function onSubmit(data: FormValues) {
+  // Autosave/restore borradores
+  const STORAGE_KEY = `videoJobForm_${nonAvatarMode ? "nonAvatar" : "avatar"}`;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        reset(saved);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reset]);
+  useEffect(() => {
+    const subscription = watch((values) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+      } catch {}
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watch]);
+
+  async function onSubmit(data: z.infer<typeof formSchema>) {
     try {
       // En modo sin avatar, garantizamos que no se envíe avatar/voice/webm
       if (nonAvatarMode) {
@@ -87,59 +190,7 @@ export default function VideoJobForm({
         data.voiceId = undefined;
         data.webmTransparent = false;
       }
-      // Simple validations for background settings
-      const bg = data.backgroundType;
-      if (bg === "color" && data.backgroundColor) {
-        const hexOk = /^#([0-9A-Fa-f]{6})$/.test(data.backgroundColor.trim());
-        if (!hexOk) {
-          showToast("Color inválido. Usa formato hex #RRGGBB");
-          return;
-        }
-      }
-      if (bg === "image") {
-        const urlStr = (data.backgroundImageUrl || "").trim();
-        if (!urlStr) {
-          showToast("Debes especificar la URL de la imagen de fondo");
-          return;
-        }
-        let u: URL | null = null;
-        try {
-          u = new URL(urlStr);
-        } catch {
-          showToast("URL de imagen inválida");
-          return;
-        }
-        if (!/^https?:$/.test(u.protocol)) {
-          showToast("La URL de imagen debe ser http(s)");
-          return;
-        }
-        if (!/\.(png|jpg|jpeg)$/i.test(u.pathname)) {
-          showToast("La imagen debe ser .png/.jpg/.jpeg");
-          return;
-        }
-      }
-      if (bg === "video") {
-        const urlStr = (data.backgroundVideoUrl || "").trim();
-        if (!urlStr) {
-          showToast("Debes especificar la URL del video de fondo");
-          return;
-        }
-        let u: URL | null = null;
-        try {
-          u = new URL(urlStr);
-        } catch {
-          showToast("URL de video inválida");
-          return;
-        }
-        if (!/^https?:$/.test(u.protocol)) {
-          showToast("La URL de video debe ser http(s)");
-          return;
-        }
-        if (!/\.(mp4|webm)$/i.test(u.pathname)) {
-          showToast("El video debe ser .mp4 o .webm");
-          return;
-        }
-      }
+      // Validación de fondo ahora la maneja Zod (formSchema)
 
       const res = await axios.post("/api/jobs", { ...data, mediaUrls: media });
       const newId: string | undefined = res.data?.id;
@@ -293,6 +344,11 @@ export default function VideoJobForm({
                   placeholder="#FAFAFA"
                   {...register("backgroundColor")}
                 />
+                {errors.backgroundColor && (
+                  <p className="text-sm text-red-400">
+                    {String(errors.backgroundColor.message)}
+                  </p>
+                )}
               </div>
             )}
             {watch("backgroundType") === "video" && (
@@ -321,6 +377,11 @@ export default function VideoJobForm({
                     placeholder="https://..."
                     {...register("backgroundImageUrl")}
                   />
+                  {errors.backgroundImageUrl && (
+                    <p className="text-sm text-red-400">
+                      {String(errors.backgroundImageUrl.message)}
+                    </p>
+                  )}
                 </div>
               )}
               {watch("backgroundType") === "video" && (
@@ -331,6 +392,11 @@ export default function VideoJobForm({
                     placeholder="https://..."
                     {...register("backgroundVideoUrl")}
                   />
+                  {errors.backgroundVideoUrl && (
+                    <p className="text-sm text-red-400">
+                      {String(errors.backgroundVideoUrl.message)}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -442,6 +508,7 @@ export default function VideoJobForm({
                         }`}
                       >
                         {url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={url}
                             alt={String(id)}

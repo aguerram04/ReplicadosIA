@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@heygen/streaming-avatar": "^2.0.16",
+    "axios": "^1.11.0",
+    "livekit-client": "^2.15.5",
     "mongoose": "^8.17.2"
   }
 }

@@ -11,10 +11,40 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const useLibrary = url.searchParams.get("library") === "true";
-    const data: any = useLibrary
-      ? await heygenListTemplatesLibrary()
-      : await heygenListTemplates();
-    const items = data?.data?.templates || data?.templates || [];
+    let data: any;
+    if (useLibrary) {
+      try {
+        data = await heygenListTemplatesLibrary();
+      } catch (err: any) {
+        const status = err?.response?.status || 500;
+        const detail = err?.response?.data || err?.message;
+        // Fallback: si falla la librería, intenta las plantillas normales
+        try {
+          const fallback = await heygenListTemplates();
+          const raw: any = fallback as any;
+          const items = raw?.data?.templates || raw?.templates || [];
+          return NextResponse.json(
+            {
+              templates: items.map((t: any) => ({
+                id: t?.template_id || t?.id,
+                name: t?.name || t?.title || t?.id,
+              })),
+              warning: { source: "library", status, detail },
+            },
+            { status: 200 }
+          );
+        } catch {
+          return NextResponse.json(
+            { error: "HeyGen library error", detail, status },
+            { status }
+          );
+        }
+      }
+    } else {
+      data = await heygenListTemplates();
+    }
+    const rawAny: any = data as any;
+    const items = rawAny?.data?.templates || rawAny?.templates || [];
     if (useLibrary && items.length === 0) {
       return NextResponse.json(
         { error: "HeyGen Library no disponible para tu cuenta/plan" },
@@ -28,7 +58,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ templates });
   } catch (e: any) {
     return NextResponse.json(
-      { error: e?.message || "Failed to list templates" },
+      {
+        error: e?.message || "Failed to list templates",
+        detail: e?.response?.data,
+      },
       { status: 500 }
     );
   }

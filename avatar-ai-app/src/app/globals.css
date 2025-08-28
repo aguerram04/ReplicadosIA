@@ -60,11 +60,21 @@ body {
     background: #f6f7f9;
   }
   .btn-accent {
-    @apply rounded-lg px-4 py-2 text-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-white transition select-none;
     background: var(--accent-blue);
   }
   .btn-accent:hover {
-    background: #006ae0;
+    background: #0a66d1; /* accent hover */
+    box-shadow: 0 6px 18px rgba(10, 102, 209, 0.25);
+    transform: translateY(-1px);
+  }
+  .btn-accent:active {
+    transform: translateY(0) scale(0.97);
+    box-shadow: 0 3px 10px rgba(10, 102, 209, 0.2);
+  }
+  .btn-accent:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(10, 102, 209, 0.8);
   }
   .chip {
     @apply rounded-2xl border px-3 py-2 text-center cursor-pointer;

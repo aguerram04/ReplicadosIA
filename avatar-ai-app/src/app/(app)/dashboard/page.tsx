@@ -33,7 +33,13 @@ export default async function DashboardPage() {
       <h1 className="text-3xl font-semibold">Tablero</h1>
       <p className="mt-2 text-white/70">
         Bienvenido,{" "}
-        {(session as any).user?.name || (session as any).user?.email}.
+        <a
+          href="/account"
+          className="underline underline-offset-4 hover:opacity-80"
+        >
+          {(session as any).user?.name || (session as any).user?.email}
+        </a>
+        .
       </p>
       <div className="mt-6 flex gap-3">
         <a href="/create" className="btn-accent">
@@ -47,6 +53,11 @@ export default async function DashboardPage() {
         </a>
         <a href="/photos" className="btn-accent">
           Crear fotos
+        </a>
+      </div>
+      <div className="mt-4">
+        <a href="/account" className="btn-outline">
+          Cuenta y créditos
         </a>
       </div>
       <div className="mt-6">

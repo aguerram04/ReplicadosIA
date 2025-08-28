@@ -5,8 +5,9 @@ const envSchema = z.object({
   NEXTAUTH_URL: z.string().url(),
   MONGODB_URI: z.string().min(1),
   HEYGEN_API_KEY: z.string().min(1),
-  STRIPE_SECRET_KEY: z.string().min(1),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  // Make Stripe vars optional to allow building environments that don't use Stripe
+  STRIPE_SECRET_KEY: z.string().optional().default(""),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().default(""),
   UPLOADTHING_TOKEN: z.string().optional().default(""),
 });
 

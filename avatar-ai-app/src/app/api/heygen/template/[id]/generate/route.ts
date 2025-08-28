@@ -14,7 +14,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const title = body?.title || "Template Video";
+  const title = body?.title || "Video de templete";
   const variables = body?.variables || {};
 
   try {

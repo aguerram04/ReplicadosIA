@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",
+    "@heygen/streaming-avatar": "^2.0.16",
     "@hookform/resolvers": "^5.2.1",
+    "archiver": "^5.3.1",
     "axios": "^1.11.0",
+    "livekit-client": "^2.15.5",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.2",
     "next": "^14.2.5",
@@ -21,8 +24,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.62.0",
-    "zod": "^3.23.8",
-    "archiver": "^5.3.1"
+    "stripe": "^18.5.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

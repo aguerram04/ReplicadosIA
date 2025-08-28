@@ -272,7 +272,7 @@ export default function TemplatePage() {
 
   async function generate() {
     if (!selected) {
-      showToast("Selecciona un template");
+      showToast("Selecciona un templete");
       return;
     }
     let variables: any = {};
@@ -485,7 +485,7 @@ export default function TemplatePage() {
             Generar Video desde Templete
           </h1>
           <div className="mb-4">
-            <label className="block text-sm mb-1">Template</label>
+            <label className="block text-sm mb-1">Templete</label>
             <div className="flex gap-2">
               <select
                 className="w-full rounded-2xl border border-border bg-transparent p-3"

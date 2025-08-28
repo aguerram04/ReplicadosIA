@@ -2,6 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dynamic from "next/dynamic";
+
+const MobileNavSelect = dynamic(
+  () => import("@/components/layout/MobileNavSelect"),
+  { ssr: false }
+);
 
 export default async function Header() {
   const session: any = await getServerSession(authOptions as any);
@@ -21,8 +27,8 @@ export default async function Header() {
           />
         </Link>
 
-        {/* Center: Navigation */}
-        <nav className="hidden gap-5 md:flex md:items-center">
+        {/* Center: Navigation (desktop only) */}
+        <nav className="hidden gap-5 lg:flex lg:items-center">
           <Link
             href="/"
             className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
@@ -57,7 +63,19 @@ export default async function Header() {
             href="/template"
             className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
           >
-            Template
+            Templete
+          </Link>
+          <Link
+            href="/studio"
+            className="inline-flex h-8 items-center text-sm font-medium text-[#2e5783] hover:text-[#1769c1]"
+          >
+            Studio
+          </Link>
+          <Link
+            href="/interactivo"
+            className="btn-accent h-8 inline-flex items-center py-1"
+          >
+            Interactivo
           </Link>
           <Link
             href="/avatarid"
@@ -67,11 +85,20 @@ export default async function Header() {
           </Link>
         </nav>
 
+        {/* Mobile/Tablet: Select navigation (visible < lg) */}
+        <div className="lg:hidden">
+          <MobileNavSelect />
+        </div>
+
         {/* Right: User */}
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-[#454545] md:inline">
+          <a
+            href="/account"
+            className="hidden md:inline-flex items-center rounded-md border border-[#e6e8eb] px-3 py-1.5 text-sm text-[#454545] hover:bg-[#f6f7f9]"
+            title="Cuenta y créditos"
+          >
             {displayName}
-          </span>
+          </a>
           {session ? (
             <a
               href="/api/auth/signout"

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReplicadosIA Interactive Realtime (Alpha)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 p-5 font-sans">
+    <div class="max-w-3xl mx-auto bg-white p-5 rounded-lg shadow-md">
+      <h1 class="text-xl font-semibold mb-4">
+        ReplicadosIA Interactive Realtime (Alpha)
+      </h1>
+
+      <div class="flex flex-wrap gap-2.5 mb-4">
+        <input
+          id="avatarID"
+          type="text"
+          placeholder="Avatar ID (optional)"
+          class="flex-1 min-w-[200px] p-2 border border-gray-300 rounded-md"
+        />
+        <button
+          id="startBtn"
+          class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+        >
+          Start
+        </button>
+        <button
+          id="closeBtn"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+        >
+          Close
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2.5 mb-4">
+        <button
+          id="btnListen"
+          class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+          Start Listening
+        </button>
+        <button
+          id="btnStopListen"
+          class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+          Stop Listening
+        </button>
+        <button
+          id="btnInterrupt"
+          class="px-3 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+        >
+          Interrupt
+        </button>
+        <button
+          id="btnKeepAlive"
+          class="px-3 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700"
+        >
+          Keep Alive
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2.5 mb-4">
+        <input
+          id="pcmText"
+          type="text"
+          placeholder="Base64 PCM chunk (16bit 24kHz)"
+          class="flex-1 min-w-[200px] p-2 border border-gray-300 rounded-md"
+        />
+        <button
+          id="btnSpeak"
+          class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          agent.speak
+        </button>
+        <button
+          id="btnSpeakEnd"
+          class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          agent.speak_end
+        </button>
+      </div>
+
+      <pre
+        id="log"
+        class="p-3 bg-gray-50 border border-gray-200 rounded-md h-[220px] overflow-y-auto text-xs"
+      ></pre>
+    </div>
+
+    <script>
+      const API_BASE = "https://api.heygen.com";
+      const logEl = document.getElementById("log");
+      const avatarID = document.getElementById("avatarID");
+
+      let sessionToken = null;
+      let sessionInfo = null;
+      let ws = null;
+
+      function log(msg) {
+        const line = `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+        logEl.textContent += line;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      async function getToken() {
+        const r = await fetch("/api/heygen/streaming/create-token", {
+          method: "POST",
+        });
+        if (!r.ok) {
+          const t = await r.text();
+          throw new Error(`token: ${r.status} ${t}`);
+        }
+        const data = await r.json();
+        return data.data.token;
+      }
+
+      async function createSession() {
+        if (!sessionToken) sessionToken = await getToken();
+        const body = {
+          quality: "high",
+          version: "v2",
+          video_encoding: "H264",
+        };
+        if (avatarID.value.trim()) body.avatar_name = avatarID.value.trim();
+
+        const r = await fetch(`${API_BASE}/v1/streaming.new`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+          const t = await r.text();
+          throw new Error(`streaming.new: ${r.status} ${t}`);
+        }
+        const data = await r.json();
+        sessionInfo = data.data;
+        log(`Session created: ${sessionInfo.session_id}`);
+
+        // Start streaming for media; realtime WS is separate
+        await fetch(`${API_BASE}/v1/streaming.start`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({ session_id: sessionInfo.session_id }),
+        });
+
+        // Open realtime WS (alpha)
+        const endpoint =
+          sessionInfo.realtime_endpoint ||
+          `wss://webrtc-signaling.heygen.io/v2-alpha/interactive-avatar/session/${sessionInfo.session_id}`;
+        ws = new WebSocket(endpoint);
+        ws.addEventListener("open", () => log("Realtime WS connected"));
+        ws.addEventListener("close", () => log("Realtime WS closed"));
+        ws.addEventListener("error", (e) =>
+          log(`Realtime WS error: ${e.message || e}`)
+        );
+        ws.addEventListener("message", (evt) => {
+          try {
+            log(`<- ${evt.data}`);
+          } catch {}
+        });
+      }
+
+      function sendEvent(evt) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          log("WS not connected");
+          return;
+        }
+        ws.send(JSON.stringify(evt));
+        log(`-> ${JSON.stringify(evt)}`);
+      }
+
+      async function closeSession() {
+        try {
+          ws && ws.close();
+        } catch {}
+        if (sessionInfo && sessionToken) {
+          try {
+            await fetch(`${API_BASE}/v1/streaming.stop`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionToken}`,
+              },
+              body: JSON.stringify({ session_id: sessionInfo.session_id }),
+            });
+          } catch {}
+        }
+        ws = null;
+        sessionInfo = null;
+        sessionToken = null;
+        log("Session closed");
+      }
+
+      // UI wiring
+      document
+        .getElementById("startBtn")
+        .addEventListener("click", async () => {
+          try {
+            await createSession();
+          } catch (e) {
+            log(e.message || String(e));
+          }
+        });
+      document
+        .getElementById("closeBtn")
+        .addEventListener("click", closeSession);
+      document.getElementById("btnListen").addEventListener("click", () =>
+        sendEvent({
+          type: "agent.start_listening",
+          event_id: crypto.randomUUID(),
+        })
+      );
+      document.getElementById("btnStopListen").addEventListener("click", () =>
+        sendEvent({
+          type: "agent.stop_listening",
+          event_id: crypto.randomUUID(),
+        })
+      );
+      document
+        .getElementById("btnInterrupt")
+        .addEventListener("click", () =>
+          sendEvent({ type: "agent.interrupt", event_id: crypto.randomUUID() })
+        );
+      document.getElementById("btnKeepAlive").addEventListener("click", () =>
+        sendEvent({
+          type: "session.keep_alive",
+          event_id: crypto.randomUUID(),
+        })
+      );
+      document.getElementById("btnSpeak").addEventListener("click", () => {
+        const chunk = document.getElementById("pcmText").value.trim();
+        if (!chunk) return;
+        sendEvent({
+          type: "agent.speak",
+          event_id: crypto.randomUUID(),
+          audio: chunk,
+        });
+      });
+      document
+        .getElementById("btnSpeakEnd")
+        .addEventListener("click", () =>
+          sendEvent({ type: "agent.speak_end", event_id: crypto.randomUUID() })
+        );
+    </script>
+  </body>
+</html>

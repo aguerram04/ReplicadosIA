@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/vite.svg" type="image/svg+xml" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <title>Interactive Avatar Demo</title>
+    <style>
+      .mode-bar {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+      .controls-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 12px;
+        align-items: center;
+      }
+      .col-2 {
+        grid-column: span 2;
+      }
+      .col-3 {
+        grid-column: span 3;
+      }
+      .col-4 {
+        grid-column: span 4;
+      }
+      .col-6 {
+        grid-column: span 6;
+      }
+      .col-8 {
+        grid-column: span 8;
+      }
+      #avatarVideo,
+      #avatarCanvas {
+        width: 720px;
+        max-width: 100%;
+        border-radius: 8px;
+        background: #fff;
+      }
+      .stack {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main
+      class="container"
+      style="display: flex; flex-direction: column; align-items: center"
+    >
+      <h1>Interactive Avatar Demo (Vite + TypeScript)</h1>
+
+      <article style="width: fit-content">
+        <video id="avatarVideo" autoplay playsinline></video>
+      </article>
+
+      <section>
+        <div class="mode-bar" role="group">
+          <button id="textModeBtn" class="active">Text Mode</button>
+          <button id="voiceModeBtn" disabled>Voice Mode</button>
+        </div>
+
+        <section id="textModeControls" role="group">
+          <div class="controls-grid">
+            <div class="stack col-4">
+              <button id="startSession">Start Session</button>
+              <button id="endSession" disabled>End Session</button>
+            </div>
+            <div class="col-6">
+              <input
+                type="text"
+                id="userInput"
+                placeholder="Type something to talk to the avatar..."
+                aria-label="User input"
+                style="width: 100%"
+              />
+            </div>
+            <div class="col-2">
+              <button id="speakButton" role="button" style="width: 100%">
+                Speak
+              </button>
+            </div>
+
+            <div class="col-4">
+              <button id="recordButton" style="width: 100%">
+                Start Recording
+              </button>
+            </div>
+            <div class="col-4">
+              <p id="recordingStatus" style="margin: 0"></p>
+            </div>
+            <div
+              class="col-4 chromakey-toggle"
+              style="display: flex; align-items: center; gap: 8px"
+            >
+              <input type="checkbox" id="chromaKeyToggle" />
+              <label for="chromaKeyToggle" style="margin: 0"
+                >Enable Chroma Keying</label
+              >
+            </div>
+          </div>
+        </section>
+
+        <section id="voiceModeControls" role="group" style="display: none">
+          <div id="voiceStatus"></div>
+        </section>
+
+        <details>
+          <summary>Config</summary>
+          <small>
+            The demo will use VITE_SERVER_BASE (Next.js route) to mint a token.
+            If not set, it will fallback to VITE_HEYGEN_API_KEY and call HeyGen
+            directly.
+          </small>
+        </details>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
