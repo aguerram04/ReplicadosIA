@@ -87,6 +87,11 @@ export default function PhotoAvatarGenerator() {
         return;
       }
       setGenerationId(j.generationId || "");
+      // If we created a Job, kick off status persistence poll with jobId
+      if (j.jobId) {
+        // augment poller to include jobId so dashboard reflects progress
+        (pollRef as any).jobId = j.jobId;
+      }
       setStatusData(null);
       showToast("Tarea enviada");
       if (pollRef.current) clearInterval(pollRef.current);
@@ -101,9 +106,11 @@ export default function PhotoAvatarGenerator() {
   async function pollOnce() {
     if (!generationId) return;
     try {
-      const r = await fetch(
-        `/api/heygen/photo-avatar/generation/status?id=${generationId}`
-      );
+      const jobId = (pollRef as any).jobId || "";
+      const url = jobId
+        ? `/api/heygen/photo-avatar/generation/status?id=${generationId}&jobId=${jobId}`
+        : `/api/heygen/photo-avatar/generation/status?id=${generationId}`;
+      const r = await fetch(url);
       const j = await r.json();
       if (r.ok) {
         setStatusData(j?.data || j);

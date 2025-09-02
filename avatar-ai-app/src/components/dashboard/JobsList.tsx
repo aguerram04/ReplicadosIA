@@ -10,6 +10,7 @@ type Job = {
   resultUrl?: string;
   translateUrl?: string;
   translateTaskId?: string;
+  heygenTaskId?: string;
   providerJobId?: string;
   error?: string;
   createdAt: string;
@@ -47,6 +48,10 @@ export default function JobsList() {
     try {
       if (job.translateTaskId) {
         await fetch(`/api/heygen/translate/status?jobId=${job._id}`);
+      } else if (job.heygenTaskId) {
+        await fetch(
+          `/api/heygen/photo-avatar/generation/status?id=${job.heygenTaskId}&jobId=${job._id}`
+        );
       } else if (job.providerJobId) {
         await fetch(`/api/heygen/video/status?jobId=${job._id}`);
       }

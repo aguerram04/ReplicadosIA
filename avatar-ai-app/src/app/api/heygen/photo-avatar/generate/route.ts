@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Job } from "@/models";
 import { heygenPhotoAvatarGenerate } from "@/lib/heygen";
 
 export async function POST(req: Request) {
@@ -31,7 +33,23 @@ export async function POST(req: Request) {
         { error: "generation_id missing", detail: data },
         { status: 502 }
       );
-    return NextResponse.json({ generationId });
+
+    // Persist as a Job so it appears in the dashboard
+    await connectToDatabase();
+    const title = `Photo Avatar: ${String(body?.name || "Generación")}`;
+    const appearance = String(body?.appearance || "");
+    const job = await Job.create({
+      userId: String((session.user as any).id),
+      title,
+      script: appearance,
+      inputType: "IMAGE",
+      status: "queued",
+      heygenTaskId: String(generationId),
+      assets: [],
+      mediaUrls: [],
+    });
+
+    return NextResponse.json({ generationId, jobId: job._id.toString() });
   } catch (e: any) {
     return NextResponse.json(
       { error: e?.message || "HeyGen error", detail: e?.response?.data },
