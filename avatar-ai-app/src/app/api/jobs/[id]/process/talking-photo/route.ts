@@ -30,13 +30,20 @@ export async function POST(
     (job.mediaUrls && job.mediaUrls[0]) || (job.assets && job.assets[0]);
   if (!firstMedia && !talkingPhotoIdFromClient) {
     return NextResponse.json(
-      { error: "Se requiere una imagen o talkingPhotoId para Talking Photo" },
+      {
+        error: "Se requiere una imagen o talkingPhotoId para Talking Photo",
+        jobMediaUrls: job.mediaUrls || [],
+        jobAssets: (job as any).assets || [],
+      },
       { status: 400 }
     );
   }
   if (!job.script || !job.script.trim()) {
     return NextResponse.json(
-      { error: "Falta el guión (script) para generar" },
+      {
+        error: "Falta el guión (script) para generar",
+        hint: "Escribe el texto que hablará el avatar",
+      },
       { status: 400 }
     );
   }

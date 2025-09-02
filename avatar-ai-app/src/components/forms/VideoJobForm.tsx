@@ -192,7 +192,16 @@ export default function VideoJobForm({
       }
       // Validación de fondo ahora la maneja Zod (formSchema)
 
-      const res = await axios.post("/api/jobs", { ...data, mediaUrls: media });
+      // Envía mediaUrls de forma robusta (string | string[])
+      const mediaPayload = Array.isArray(media)
+        ? media
+        : typeof (media as any) === "string"
+        ? [String(media)]
+        : [];
+      const res = await axios.post("/api/jobs", {
+        ...data,
+        mediaUrls: mediaPayload,
+      });
       const newId: string | undefined = res.data?.id;
       if (!newId) {
         showToast("No se pudo crear el trabajo");
