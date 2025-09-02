@@ -25,6 +25,7 @@ export async function POST(
 
   const body = await req.json().catch(() => ({}));
   const talkingPhotoIdFromClient: string | undefined = body?.talkingPhotoId;
+  const silentRequested: boolean = Boolean(body?.silent);
 
   const firstMedia: string | undefined =
     (job.mediaUrls && job.mediaUrls[0]) || (job.assets && job.assets[0]);
@@ -38,7 +39,7 @@ export async function POST(
       { status: 400 }
     );
   }
-  if (!job.script || !job.script.trim()) {
+  if (!silentRequested && (!job.script || !job.script.trim())) {
     return NextResponse.json(
       {
         error: "Falta el guión (script) para generar",
@@ -84,6 +85,30 @@ export async function POST(
       }
     }
 
+    // Voice strategy: prefer uploaded audio; otherwise use text with a voice_id
+    const audioUrl: string | undefined = (
+      Array.isArray(job.mediaUrls) ? job.mediaUrls : []
+    ).find((u: string) => /\.(mp3|wav|m4a|aac)$/i.test(String(u)));
+    const chosenVoiceId: string | undefined =
+      (job as any).voiceId || process.env.HEYGEN_DEFAULT_VOICE_ID;
+    let voice: any | undefined;
+    if (audioUrl) {
+      voice = { type: "audio", url: audioUrl };
+    } else if (!silentRequested && chosenVoiceId) {
+      voice = {
+        type: "text",
+        input_text: job.script,
+        voice_id: chosenVoiceId,
+        speed:
+          typeof (job as any).voiceSpeed === "number"
+            ? (job as any).voiceSpeed
+            : undefined,
+      };
+    } else if (!silentRequested) {
+      // Silent video: omitimos el bloque de voz por completo
+      voice = undefined;
+    }
+
     const payload: any = {
       video_inputs: [
         {
@@ -91,11 +116,7 @@ export async function POST(
             type: "talking_photo",
             talking_photo_id: talkingPhotoId,
           },
-          voice: {
-            type: "text",
-            input_text: job.script,
-            voice_id: job.voiceId || undefined,
-          },
+          ...(voice ? { voice } : {}),
           background: {
             type: "color",
             value: "#FAFAFA",

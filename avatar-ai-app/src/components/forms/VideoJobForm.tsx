@@ -146,6 +146,7 @@ export default function VideoJobForm({
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [groupAvatars, setGroupAvatars] = useState<any[]>([]);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>("");
+  const [silent, setSilent] = useState<boolean>(false);
 
   function handleAdd(urls: string[]) {
     setMedia((prev) => [...prev, ...urls]);
@@ -229,6 +230,7 @@ export default function VideoJobForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             talkingPhotoId: selectedPhotoId || undefined,
+            silent: Boolean(silent),
           }),
         });
       } else {
@@ -331,13 +333,48 @@ export default function VideoJobForm({
           </div>
           <div>
             <label className={`block text-sm ${labelsBelow ? "mt-1" : "mb-1"}`}>
-              Voice ID (opcional)
+              Voz (HeyGen)
             </label>
-            <input
+            <select
               className="w-full rounded-2xl border border-border bg-transparent p-3"
-              placeholder="ej. voice_abc"
               {...register("voiceId")}
-            />
+              defaultValue=""
+              disabled={silent}
+              onFocus={async (e) => {
+                // Lazy-load voices the first time user opens the dropdown
+                try {
+                  const r = await fetch("/api/heygen/voices", {
+                    cache: "no-store",
+                  });
+                  const j = await r.json();
+                  const sel = e.currentTarget;
+                  if (Array.isArray(j?.voices) && sel.options.length <= 1) {
+                    for (const v of j.voices) {
+                      const opt = document.createElement("option");
+                      opt.value = String(v.id || v.voice_id || "");
+                      opt.text = `${v.name || v.id}${
+                        v.language ? ` — ${v.language}` : ""
+                      }`;
+                      sel.appendChild(opt);
+                    }
+                  }
+                } catch {}
+              }}
+            >
+              <option value="">(elige una voz o deja vacío)</option>
+            </select>
+            <p className="text-xs opacity-70 mt-1">
+              Consejo: si lo dejas vacío, puedes subir un audio o configurar
+              HEYGEN_DEFAULT_VOICE_ID.
+            </p>
+            <label className="flex items-center gap-2 mt-2 text-sm">
+              <input
+                type="checkbox"
+                checked={silent}
+                onChange={(e) => setSilent(e.target.checked)}
+              />
+              Generar sin audio
+            </label>
           </div>
         </div>
       )}
