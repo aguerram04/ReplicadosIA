@@ -18,7 +18,11 @@ export default async function JobDetailPage({
     );
   }
 
-  const openUrl = (job as any).translateUrl || (job as any).resultUrl || "";
+  const openUrl =
+    (job as any).translateUrl ||
+    (job as any).outputUrl ||
+    (job as any).resultUrl ||
+    "";
   const isReady = job.status === "done" && !!openUrl;
 
   return (
@@ -52,15 +56,20 @@ export default async function JobDetailPage({
             ) : null}
           </div>
 
-          <div className="shrink-0 flex items-start">
+          <div className="shrink-0 flex items-start gap-2">
             {openUrl ? (
-              <a
-                href={openUrl}
-                target="_blank"
-                className={isReady ? "btn-primary" : "btn-outline opacity-60"}
-              >
-                Abrir
-              </a>
+              <>
+                <a
+                  href={openUrl}
+                  target="_blank"
+                  className={isReady ? "btn-primary" : "btn-outline opacity-60"}
+                >
+                  Ver resultado
+                </a>
+                <a href={openUrl} download className="btn-outline">
+                  Descargar
+                </a>
+              </>
             ) : null}
           </div>
         </div>

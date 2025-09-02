@@ -37,8 +37,25 @@ export async function GET(req: Request) {
           Array.isArray(raw?.images)
         ) {
           update.status = "done";
-          // For photo avatar generation we may only have image_keys or previews
-          const firstUrl = (raw?.images || [])?.[0]?.url || raw?.preview_url;
+          // Extract a representative URL (first image or preview)
+          let firstUrl: string | undefined = undefined;
+          const images = Array.isArray(raw?.images) ? raw.images : [];
+          if (images.length > 0) {
+            const it = images[0];
+            if (typeof it === "string") firstUrl = it;
+            else if (it?.url) firstUrl = it.url;
+            else if (it?.image_url) firstUrl = it.image_url;
+          }
+          const alt1 = Array.isArray((raw as any)?.image_urls)
+            ? (raw as any).image_urls.find((u: any) => typeof u === "string")
+            : undefined;
+          const alt2 = Array.isArray((raw as any)?.image_url_list)
+            ? (raw as any).image_url_list.find(
+                (u: any) => typeof u === "string"
+              )
+            : undefined;
+          const preview = (raw as any)?.preview_url;
+          firstUrl = firstUrl || alt1 || alt2 || preview;
           if (firstUrl) {
             update.resultUrl = firstUrl;
             update.outputUrl = firstUrl;

@@ -179,7 +179,18 @@ export default function JobsList() {
                   >
                     {job.translateUrl
                       ? "Ver video traducido"
-                      : "Ver video Avatar"}
+                      : "Ver Photo Avatar"}
+                  </a>
+                  <a
+                    href={
+                      job.translateUrl ||
+                      job.outputUrl ||
+                      (job.resultUrl as string)
+                    }
+                    download
+                    className="btn-outline w-[140px] text-center"
+                  >
+                    Descargar
                   </a>
                 </>
               )}
