@@ -262,14 +262,29 @@ export default function VideoJobForm({
         let detail = "";
         try {
           const j = await proc.json();
-          detail = j?.error || j?.detail || "";
-        } catch {}
-        showToast(`Error al generar: ${detail || proc.statusText}`);
+          detail = j?.error || j?.detail || j?.message || "";
+        } catch {
+          try {
+            const t = await proc.text();
+            detail = t;
+          } catch {}
+        }
+        const httpInfo = `HTTP ${proc.status} ${proc.statusText || ""}`.trim();
+        showToast(
+          `Error al generar: ${detail || httpInfo || "Solicitud inválida"}`
+        );
       }
       setMedia([]);
       reset();
     } catch (e: any) {
-      showToast(e?.response?.data?.error || "Error creando la solicitud");
+      const resp = e?.response;
+      const msg = resp
+        ? resp?.data?.error ||
+          resp?.data?.detail ||
+          resp?.data?.message ||
+          `HTTP ${resp?.status} ${resp?.statusText || ""}`
+        : e?.message || "Error creando la solicitud";
+      showToast(msg);
     }
   }
 

@@ -44,16 +44,35 @@ export async function POST(
   try {
     let talkingPhotoId = talkingPhotoIdFromClient;
     if (!talkingPhotoId) {
-      const up = await heygenUploadTalkingPhotoFromUrl(firstMedia as string);
-      talkingPhotoId =
-        (up as any)?.data?.talking_photo_id || (up as any)?.talking_photo_id;
-      if (!talkingPhotoId) {
+      try {
+        const up = await heygenUploadTalkingPhotoFromUrl(firstMedia as string);
+        talkingPhotoId =
+          (up as any)?.data?.talking_photo_id || (up as any)?.talking_photo_id;
+        if (!talkingPhotoId) {
+          job.status = "error";
+          job.error = "No talking_photo_id";
+          await job.save();
+          return NextResponse.json(
+            {
+              error: "HeyGen no devolvió talking_photo_id",
+              detail: up,
+              sourceImage: firstMedia,
+            },
+            { status: 502 }
+          );
+        }
+      } catch (e: any) {
         job.status = "error";
-        job.error = "No talking_photo_id";
+        job.error = e?.message || "Fallo subiendo imagen a HeyGen";
         await job.save();
+        const status = e?.response?.status || 500;
         return NextResponse.json(
-          { error: "HeyGen no devolvió talking_photo_id", detail: up },
-          { status: 502 }
+          {
+            error: job.error,
+            detail: e?.response?.data || null,
+            sourceImage: firstMedia,
+          },
+          { status }
         );
       }
     }
@@ -103,6 +122,10 @@ export async function POST(
     job.status = "error";
     job.error = e?.message || String(e);
     await job.save();
-    return NextResponse.json({ error: job.error }, { status: 500 });
+    const status = e?.response?.status || 500;
+    return NextResponse.json(
+      { error: job.error, detail: e?.response?.data || null },
+      { status }
+    );
   }
 }
