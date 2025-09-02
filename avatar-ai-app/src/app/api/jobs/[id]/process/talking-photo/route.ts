@@ -104,8 +104,24 @@ export async function POST(
             ? (job as any).voiceSpeed
             : undefined,
       };
+    } else if (silentRequested && process.env.HEYGEN_SILENT_AUDIO_URL) {
+      // Para cumplir con requerimiento de voice, usamos un audio silencioso
+      voice = {
+        type: "audio",
+        url: String(process.env.HEYGEN_SILENT_AUDIO_URL),
+      };
     } else if (!silentRequested) {
-      // Silent video: omitimos el bloque de voz por completo
+      // Sin audio ni voiceId y no es modo silencioso -> error claro
+      return NextResponse.json(
+        {
+          error:
+            "Falta audio o voice_id. Sube un audio, elige una voz o configura HEYGEN_DEFAULT_VOICE_ID.",
+          hint: "Para silencioso, marca 'Generar sin audio' o define HEYGEN_SILENT_AUDIO_URL.",
+        },
+        { status: 400 }
+      );
+    } else {
+      // Modo silencioso sin silent audio URL: intentamos sin 'voice'
       voice = undefined;
     }
 

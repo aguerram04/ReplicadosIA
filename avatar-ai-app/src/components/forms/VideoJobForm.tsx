@@ -479,6 +479,26 @@ export default function VideoJobForm({
             <MediaUploader onAdd={handleAdd}>
               <span className="btn-accent">Subir desde dispositivo/cámara</span>
             </MediaUploader>
+            <div className="w-3" />
+            <MediaUploader accept="video" onAdd={handleAdd}>
+              <span className="btn-outline">Subir video</span>
+            </MediaUploader>
+            <div className="w-3" />
+            <MediaUploader
+              accept="auto"
+              onAdd={(urls) => {
+                const audioOnly = urls.filter((u) =>
+                  /\.(mp3|wav|m4a|aac)$/i.test(u.split("?")[0] || "")
+                );
+                if (audioOnly.length > 0) handleAdd(audioOnly);
+              }}
+            >
+              <span className="btn-outline">Subir audio</span>
+            </MediaUploader>
+          </div>
+          <div className="text-xs opacity-70">
+            Consejo: para usar tu propia voz, sube un archivo de audio
+            (mp3/wav/m4a/aac).
           </div>
           {/* Optional: Photo Avatar groups selector */}
           <div className="grid md:grid-cols-2 gap-3">
