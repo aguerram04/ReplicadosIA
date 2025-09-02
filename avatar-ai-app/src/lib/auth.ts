@@ -80,9 +80,7 @@ export const authOptions: NextAuthOptions = {
         token.email = dbUser.email;
         token.name = dbUser.name ?? null;
         (token as any).role =
-          (dbUser as any).role ??
-          ((dbUser as any).isAdmin ? "admin" : "user") ??
-          "user";
+          (dbUser as any).role ?? ((dbUser as any).isAdmin ? "admin" : "user");
         (token as any).isAdmin = (dbUser as any).isAdmin ?? false;
         return token;
       }
@@ -94,9 +92,7 @@ export const authOptions: NextAuthOptions = {
         });
         token.id = token.id || dbUser._id.toString();
         (token as any).role =
-          (dbUser as any).role ??
-          ((dbUser as any).isAdmin ? "admin" : "user") ??
-          "user";
+          (dbUser as any).role ?? ((dbUser as any).isAdmin ? "admin" : "user");
         (token as any).isAdmin = (dbUser as any).isAdmin ?? false;
       }
       return token;
