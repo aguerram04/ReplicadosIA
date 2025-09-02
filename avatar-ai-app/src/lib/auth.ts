@@ -79,15 +79,25 @@ export const authOptions: NextAuthOptions = {
         token.id = dbUser._id.toString();
         token.email = dbUser.email;
         token.name = dbUser.name ?? null;
+        (token as any).role =
+          (dbUser as any).role ??
+          ((dbUser as any).isAdmin ? "admin" : "user") ??
+          "user";
+        (token as any).isAdmin = (dbUser as any).isAdmin ?? false;
         return token;
       }
 
-      // If token has no id yet (e.g., OAuth without adapter), backfill from DB by email
-      if (!token.id && token.email) {
+      // Backfill/normalize on any request that has an email (covers refresh/session fetch)
+      if (token.email) {
         const dbUser = await findOrCreateUserByEmail(token.email as string, {
           name: (token.name as string) || undefined,
         });
-        token.id = dbUser._id.toString();
+        token.id = token.id || dbUser._id.toString();
+        (token as any).role =
+          (dbUser as any).role ??
+          ((dbUser as any).isAdmin ? "admin" : "user") ??
+          "user";
+        (token as any).isAdmin = (dbUser as any).isAdmin ?? false;
       }
       return token;
     },
@@ -96,6 +106,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = (token.name as string) ?? null;
+        (session.user as any).role = (token as any).role || "user";
+        (session.user as any).isAdmin = Boolean((token as any).isAdmin);
       }
       return session;
     },

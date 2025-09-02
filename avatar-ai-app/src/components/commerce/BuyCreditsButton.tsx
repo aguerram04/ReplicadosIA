@@ -78,12 +78,20 @@ export default function BuyCreditsButton() {
     <>
       <Script async src="https://js.stripe.com/v3/buy-button.js" />
       {attrs.publishableKey && attrs.buyButtonId ? (
-        <stripe-buy-button
-          buy-button-id={attrs.buyButtonId as any}
-          publishable-key={attrs.publishableKey as any}
-          client-reference-id={attrs.clientRef as any}
-          customer-email={attrs.email as any}
-        />
+        <div
+          onClick={() => {
+            try {
+              sessionStorage.removeItem("reconcile_checked");
+            } catch {}
+          }}
+        >
+          <stripe-buy-button
+            buy-button-id={attrs.buyButtonId as any}
+            publishable-key={attrs.publishableKey as any}
+            client-reference-id={attrs.clientRef as any}
+            customer-email={attrs.email as any}
+          />
+        </div>
       ) : (
         <div className="px-4 py-2 rounded-md border border-white/20">
           Configura NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY y

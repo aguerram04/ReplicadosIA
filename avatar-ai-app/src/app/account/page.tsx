@@ -6,6 +6,7 @@ import AccountActions from "@/components/commerce/AccountActions";
 import BuyCreditsButton from "@/components/commerce/BuyCreditsButton";
 import SyncCreditsButton from "@/components/commerce/SyncCreditsButton";
 import AutoReconcileAfterStripe from "@/components/commerce/AutoReconcileAfterStripe";
+import ReconcileOnLoad from "@/components/commerce/ReconcileOnLoad";
 import ReconcileOnReturn from "@/components/commerce/ReconcileOnReturn";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,7 @@ export default async function AccountPage() {
   return (
     <main className="container py-10">
       <AutoReconcileAfterStripe />
+      <ReconcileOnLoad />
       {/* Client-side reconcile when returning from Stripe */}
       <ReconcileOnReturn />
       <h1 className="text-2xl font-semibold">Cuenta</h1>
@@ -47,9 +49,11 @@ export default async function AccountPage() {
         <div className="rounded-lg border border-white/10 p-4">
           <h2 className="font-medium">Créditos</h2>
           <p className="text-3xl mt-2">{credits}</p>
-          <div className="mt-4 flex items-center">
+          <div className="mt-4">
             <BuyCreditsButton />
-            <SyncCreditsButton />
+            <div className="mt-3">
+              <SyncCreditsButton />
+            </div>
           </div>
         </div>
 

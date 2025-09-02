@@ -59,6 +59,20 @@ export default function JobsList() {
   }
 
   async function startJob(job: Job) {
+    // Show estimated credits before starting
+    try {
+      const r = await fetch(`/api/jobs/${job._id}`);
+      const j = await r.json();
+      if (typeof j?.estimatedCredits === "number") {
+        if (
+          !confirm(
+            `Este trabajo consumirá ~${j.estimatedCredits} créditos. ¿Continuar?`
+          )
+        ) {
+          return;
+        }
+      }
+    } catch {}
     const previousStatus = job.status;
     try {
       const res = await fetch(`/api/jobs/${job._id}/process`, {

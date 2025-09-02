@@ -2,8 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Job } from "@/models";
-import { heygenVideoGenerate, heygenVideoStatus } from "@/lib/heygen";
+import { Job, User } from "@/models";
+import {
+  heygenVideoGenerate,
+  heygenVideoStatus,
+  estimateHeygenCreditsForJob,
+  vendorUsdCostPerCredit,
+} from "@/lib/heygen";
+import { spendCredits, addCredits } from "@/lib/db-helpers";
+import VendorLedger from "@/models/VendorLedger";
 
 export async function POST(
   _req: Request,
@@ -35,6 +42,35 @@ export async function POST(
   }
 
   try {
+    // Pre-deduct estimated credits
+    const creditsToSpend = estimateHeygenCreditsForJob(job);
+    const user = await User.findById(String(session.user.id)).lean();
+    if (!user || (user as any).credits < creditsToSpend) {
+      return NextResponse.json(
+        { error: "Créditos insuficientes" },
+        { status: 402 }
+      );
+    }
+    await spendCredits(String(session.user.id), creditsToSpend, "spend", {
+      jobId: String(job._id),
+      stage: "pre_deduct",
+      provider: "heygen",
+    });
+    job.estimatedCredits = creditsToSpend;
+    // Record vendor consumption estimate (optional vendor cost)
+    const vendorCost = vendorUsdCostPerCredit() * creditsToSpend;
+    try {
+      await VendorLedger.create({
+        userId: (user as any)?._id,
+        userEmail: (user as any)?.email,
+        userName: (user as any)?.name ?? null,
+        type: "consumption",
+        vendor: "heygen",
+        credits: -Math.abs(creditsToSpend),
+        vendorCostUsd: vendorCost,
+        meta: { jobId: String(job._id), stage: "pre_deduct" },
+      });
+    } catch {}
     // Build background block if configured
     let background: any = undefined;
     const bgType = (job as any).backgroundType as
@@ -131,8 +167,18 @@ export async function POST(
       id: job._id.toString(),
       providerJobId: providerId,
       status: job.status,
+      estimatedCredits: job.estimatedCredits,
     });
   } catch (e: any) {
+    // Refund if generation failed
+    try {
+      const creditsToRefund = estimateHeygenCreditsForJob(job);
+      await addCredits(String(session.user.id), creditsToRefund, "adjust", {
+        jobId: String(job._id),
+        stage: "refund_on_error",
+        provider: "heygen",
+      });
+    } catch {}
     const apiDetail = e?.response?.data || e?.data;
     job.status = "error";
     job.error =

@@ -4,6 +4,9 @@ export type CreditReason = "purchase" | "spend" | "adjust";
 
 export interface ICreditLedger {
   userId: Types.ObjectId;
+  userEmail?: string;
+  userName?: string | null;
+  dollarToCreditPct?: number;
   amount: number; // positive or negative
   reason: CreditReason;
   meta?: Record<string, unknown>;
@@ -23,6 +26,9 @@ const creditLedgerSchema = new Schema<ICreditLedger>({
     enum: ["purchase", "spend", "adjust"],
     required: true,
   },
+  dollarToCreditPct: { type: Number, min: 0, max: 100 },
+  userEmail: { type: String, index: true },
+  userName: { type: String },
   meta: { type: Schema.Types.Mixed },
   createdAt: { type: Date, default: () => new Date() },
 });

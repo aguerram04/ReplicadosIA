@@ -36,6 +36,10 @@ export interface IJob {
   status: JobStatus;
   createdAt: Date;
   updatedAt: Date;
+  // Credits accounting
+  estimatedCredits?: number;
+  actualCredits?: number;
+  vendorCostUsd?: number;
 }
 
 const JobSchema = new Schema<IJob>(

@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Job } from "@/models";
+import { Job, User } from "@/models";
+import { spendCredits } from "@/lib/db-helpers";
+import {
+  estimateHeygenCreditsForJob,
+  vendorUsdCostPerCredit,
+  deriveActualCreditsForJob,
+} from "@/lib/heygen";
+import VendorLedger from "@/models/VendorLedger";
 import crypto from "crypto";
 
 // Preflight validation: HeyGen hace OPTIONS con timeout de ~1s
@@ -121,6 +128,59 @@ export async function POST(req: Request) {
     update.errorMessage = update.error;
   }
 
-  await Job.updateOne(query, { $set: update });
+  const job = await Job.findOneAndUpdate(
+    query,
+    { $set: update },
+    { new: true }
+  );
+
+  if (job && (update.status === "done" || update.status === "error")) {
+    const actualCredits = await deriveActualCreditsForJob(job, body, eventData);
+    try {
+      if (update.status === "error") {
+        const estimated =
+          Number(job.estimatedCredits) || estimateHeygenCreditsForJob(job);
+        await spendCredits(String(job.userId), -estimated, "adjust", {
+          jobId: String(job._id),
+          stage: "refund_on_error",
+          provider: "heygen",
+        });
+      } else if (update.status === "done") {
+        // Adjust from estimated to actual if different
+        const estimated =
+          Number(job.estimatedCredits) || estimateHeygenCreditsForJob(job);
+        const delta = Math.abs(actualCredits) - Math.abs(estimated);
+        if (delta !== 0) {
+          await spendCredits(
+            String(job.userId),
+            Math.abs(delta),
+            delta > 0 ? "spend" : "adjust",
+            {
+              jobId: String(job._id),
+              stage: "final_adjust",
+              provider: "heygen",
+            }
+          );
+        }
+        job.actualCredits = Math.abs(actualCredits);
+        await job.save();
+        const user = await User.findById(job.userId).lean();
+        const vendorCost = vendorUsdCostPerCredit() * Math.abs(actualCredits);
+        job.vendorCostUsd = vendorCost;
+        await job.save();
+        await VendorLedger.create({
+          userId: (user as any)?._id,
+          userEmail: (user as any)?.email,
+          userName: (user as any)?.name ?? null,
+          type: "consumption",
+          vendor: "heygen",
+          credits: -Math.abs(actualCredits),
+          vendorCostUsd: vendorCost,
+          meta: { jobId: String(job._id), stage: "finalize" },
+        });
+      }
+    } catch {}
+  }
+
   return NextResponse.json({ ok: true });
 }

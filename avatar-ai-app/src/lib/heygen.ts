@@ -12,6 +12,99 @@ export const heygen = axios.create({
   },
 });
 
+// Fetch account API credits/balance if HeyGen exposes it. Returns null if unknown
+export async function heygenGetApiCreditsBalance(): Promise<number | null> {
+  try {
+    // Attempt 1: hypothetical balance endpoint (subject to change)
+    const r1 = await heygen.get("/v1/credits/balance");
+    const fromR1 =
+      (r1 as any)?.data?.data?.credits ?? (r1 as any)?.data?.credits;
+    if (typeof fromR1 === "number") return fromR1;
+  } catch {}
+  try {
+    // Attempt 2: alternative path used by some tenants
+    const r2 = await heygen.get("/v2/credits/balance");
+    const fromR2 =
+      (r2 as any)?.data?.data?.credits ?? (r2 as any)?.data?.credits;
+    if (typeof fromR2 === "number") return fromR2;
+  } catch {}
+  try {
+    // Optional override via env for manual display
+    const override = process.env.HEYGEN_BALANCE_OVERRIDE;
+    if (override && !Number.isNaN(Number(override))) return Number(override);
+  } catch {}
+  return null;
+}
+
+// Business rules: estimate credits to spend for a HeyGen job
+export function estimateHeygenCreditsForJob(_job?: any): number {
+  const fromEnv = Number(process.env.HEYGEN_COST_CREDITS_PER_JOB || "10");
+  return Number.isFinite(fromEnv) && fromEnv > 0 ? Math.floor(fromEnv) : 10;
+}
+
+export function vendorUsdCostPerCredit(): number {
+  const v = Number(process.env.HEYGEN_VENDOR_COST_USD_PER_CREDIT || "0");
+  return Number.isFinite(v) && v >= 0 ? v : 0;
+}
+
+export function computeCreditsFromDurationSec(durationSeconds: number): number {
+  const n = Math.ceil(Number(durationSeconds || 0) / 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+function parseMaybeNumber(v: any): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function estimateCreditsFromResolution(job: any): number {
+  const width = Number((job as any)?.width) || 1280;
+  const height = Number((job as any)?.height) || 720;
+  const p720 = Number(process.env.HEYGEN_COST_CREDITS_720P || "10");
+  const p1080 = Number(process.env.HEYGEN_COST_CREDITS_1080P || "15");
+  const p4k = Number(process.env.HEYGEN_COST_CREDITS_4K || "25");
+  if (width >= 3800 || height >= 2100) return p4k;
+  if (width >= 1900 || height >= 1000) return p1080;
+  return p720;
+}
+
+// Tries multiple sources to determine actual credits used once a job finishes
+export async function deriveActualCreditsForJob(
+  job: any,
+  body?: any,
+  eventData?: any
+): Promise<number> {
+  // 1) Prefer exact duration from webhook payload
+  const directDur =
+    parseMaybeNumber(eventData?.duration_seconds) ||
+    parseMaybeNumber(eventData?.duration) ||
+    parseMaybeNumber(eventData?.meta?.duration) ||
+    parseMaybeNumber(body?.duration_seconds) ||
+    parseMaybeNumber(body?.duration);
+  if (directDur) return computeCreditsFromDurationSec(directDur);
+
+  // 2) Try querying status API by provider video id
+  const providerId = (job as any)?.providerJobId;
+  if (providerId) {
+    try {
+      const s: any = await heygenVideoStatus(providerId);
+      const data = s?.data || s;
+      const dur =
+        parseMaybeNumber(data?.duration_seconds) ||
+        parseMaybeNumber(data?.duration) ||
+        parseMaybeNumber(data?.meta?.duration);
+      if (dur) return computeCreditsFromDurationSec(dur);
+    } catch {}
+  }
+
+  // 3) Fall back to resolution-based heuristic
+  const resEst = estimateCreditsFromResolution(job);
+  if (resEst) return resEst;
+
+  // 4) Final fallback to general estimate
+  return estimateHeygenCreditsForJob(job);
+}
+
 // v1 create avatar video (mantenemos por compatibilidad)
 export type CreateVideoPayload = {
   avatar_id?: string;

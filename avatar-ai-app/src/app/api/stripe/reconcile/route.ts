@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { connectToDatabase } from "@/lib/mongodb";
-import { CreditLedger } from "@/models";
+import { CreditLedger, User, VendorLedger } from "@/models";
 import { addCredits, findOrCreateUserByEmail } from "@/lib/db-helpers";
+import { findPlanByPriceId } from "@/config/pricing";
 
 type Body = { sessionId?: string };
 
@@ -71,13 +72,10 @@ export async function POST(req: Request) {
     const metadataCredits = checkout.metadata?.credits
       ? Number(checkout.metadata.credits)
       : undefined;
-    const priceFor100 = process.env.STRIPE_PRICE_CREDITS_100;
+    const plan = findPlanByPriceId(priceId);
     const fallback =
       typeof amountTotal === "number" ? Math.floor(amountTotal / 100) : 0;
-    const computed =
-      metadataCredits ??
-      (priceFor100 && priceId === priceFor100 ? 100 : fallback);
-    const creditsToAdd = Math.max(1, Number(computed));
+    const baseCredits = metadataCredits ?? plan?.credits ?? fallback;
 
     let userEmail = (
       checkout.customer_details?.email ||
@@ -86,6 +84,14 @@ export async function POST(req: Request) {
       ""
     ).toString();
     const user = await findOrCreateUserByEmail(userEmail);
+    const pct = Math.max(
+      0,
+      Math.min(100, Number((user as any)?.dollarToCreditPct ?? 50))
+    );
+    const creditsToAdd = Math.floor((Number(baseCredits) || 0) * (pct / 100));
+    if (creditsToAdd <= 0) {
+      return NextResponse.json({ ok: true, credited: 0 });
+    }
 
     await addCredits(user._id.toString(), creditsToAdd, "purchase", {
       stripeSessionId: sessionId,
@@ -94,6 +100,35 @@ export async function POST(req: Request) {
       currency: checkout.currency,
       mode: checkout.mode,
       reconciled: true,
+    });
+
+    // Registrar VendorLedger: ingreso y costo estimado del proveedor (HeyGen)
+    const revenueUsd = typeof amountTotal === "number" ? amountTotal / 100 : 0;
+    const marginPct = Number(
+      plan?.marginPct ?? process.env.DEFAULT_MARGIN_PCT ?? 30
+    );
+    const vendorCostUsd = Number(
+      (revenueUsd * (1 - marginPct / 100)).toFixed(2)
+    );
+    const marginUsd = Number((revenueUsd - vendorCostUsd).toFixed(2));
+    await VendorLedger.create({
+      userId: user._id,
+      userEmail: user.email,
+      userName: user.name ?? undefined,
+      type: "purchase",
+      vendor: "heygen",
+      credits: creditsToAdd,
+      vendorCostUsd,
+      revenueUsd,
+      marginUsd,
+      meta: {
+        stripeSessionId: sessionId,
+        priceId,
+        planMarginPct: marginPct,
+        checkoutCurrency: checkout.currency,
+        mode: checkout.mode,
+        inferredCredits: baseCredits,
+      },
     });
 
     return NextResponse.json({ ok: true, credited: creditsToAdd });

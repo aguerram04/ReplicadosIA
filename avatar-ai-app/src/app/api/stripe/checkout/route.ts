@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
+import { findPlanByPriceId } from "@/config/pricing";
 
 type Body = {
   priceId?: string;
@@ -33,9 +34,8 @@ export async function POST(req: Request) {
 
     const stripe = getStripe();
 
-    const priceIdCredits100 = process.env.STRIPE_PRICE_CREDITS_100 || "";
-    const inferredCreditsPerUnit =
-      priceId && priceId === priceIdCredits100 ? 100 : undefined;
+    const plan = findPlanByPriceId(priceId);
+    const inferredCreditsPerUnit = plan?.credits;
     const totalCredits = inferredCreditsPerUnit
       ? inferredCreditsPerUnit * quantity
       : undefined;
@@ -56,6 +56,7 @@ export async function POST(req: Request) {
       automatic_tax: { enabled: true },
       metadata: {
         userId: String((session.user as any).id || ""),
+        planPriceId: priceId,
         ...(body.metadata || {}),
         ...(typeof totalCredits === "number"
           ? { credits: String(totalCredits) }
