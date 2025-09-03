@@ -332,7 +332,7 @@ export default function VideoJobForm({
         )}
         <div>
           <label className={`block text-sm ${labelsBelow ? "mt-1" : "mb-1"}`}>
-            Voz (HeyGen)
+            Voz
           </label>
           <select
             className="w-full rounded-2xl border border-border bg-transparent p-3"
@@ -362,10 +362,7 @@ export default function VideoJobForm({
           >
             <option value="">(elige una voz o deja vacío)</option>
           </select>
-          <p className="text-xs opacity-70 mt-1">
-            Consejo: si lo dejas vacío, puedes subir un audio o configurar
-            HEYGEN_DEFAULT_VOICE_ID.
-          </p>
+          {/* consejo removido a solicitud */}
           <label className="flex items-center gap-2 mt-2 text-sm">
             <input
               type="checkbox"

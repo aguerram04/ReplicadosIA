@@ -93,22 +93,22 @@ export async function POST(
       (job as any).voiceId || process.env.HEYGEN_DEFAULT_VOICE_ID;
     let voice: any | undefined;
     if (audioUrl) {
-      voice = { type: "audio", url: audioUrl };
+      // Estructura esperada: voice.audio_url
+      voice = { type: "audio", audio_url: audioUrl };
     } else if (!silentRequested && chosenVoiceId) {
+      // Estructura esperada para TTS: voice.text.voice_id + input_text
       voice = {
         type: "text",
-        input_text: job.script,
-        voice_id: chosenVoiceId,
-        speed:
-          typeof (job as any).voiceSpeed === "number"
-            ? (job as any).voiceSpeed
-            : undefined,
+        text: {
+          input_text: job.script,
+          voice_id: chosenVoiceId,
+        },
       };
     } else if (silentRequested && process.env.HEYGEN_SILENT_AUDIO_URL) {
       // Para cumplir con requerimiento de voice, usamos un audio silencioso
       voice = {
         type: "audio",
-        url: String(process.env.HEYGEN_SILENT_AUDIO_URL),
+        audio_url: String(process.env.HEYGEN_SILENT_AUDIO_URL),
       };
     } else if (!silentRequested) {
       // Sin audio ni voiceId y no es modo silencioso -> error claro
